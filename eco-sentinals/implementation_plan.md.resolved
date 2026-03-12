@@ -1,0 +1,54 @@
+# EcoNode Implementation Plan
+
+We will build "EcoNode" - a dual-mode sentinel for Municipal Corporation of Delhi.
+
+## Proposed Changes
+
+### Structure Initialization
+Create the following directories:
+- `d:/eco-sentinals/firmware/`
+- `d:/eco-sentinals/server/`
+- `d:/eco-sentinals/client/`
+- `d:/eco-sentinals/models/`
+- `d:/eco-sentinals/docs/`
+
+### Firmware (`firmware/`)
+#### [NEW] `firmware/econode.ino`
+ESP32 C++ firmware. Connects to WiFi, reads PMS5003 (UART) and BME280 (I2C) sensors. Sends JSON payload to Firebase Realtime Database. Listens to Firebase path `/command` for "OPEN_LID". If received, rotates a servo (MG995) to 90 degrees, flashes WS2812B LED green, waits 3s, and closes the lid.
+
+### Server (`server/`)
+#### [NEW] `server/main.py`
+FastAPI Python application. 
+- `POST /ingest-sensor`: Ingests sensor data, runs a placeholder Random Forest calibration, and updates Firebase.
+- `GET /video-feed`: Reads USB webcam using `cv2.VideoCapture()`, runs MobileNetV2 (via TFLite) for classification ("Plastic", "Paper", "Organic"). If confidence > 0.8, triggers Firebase `/command` with "OPEN_LID". Returns MJPEG stream with bounding boxes.
+- `GET /policy-alert`: Returns JSON. If calibrated AQI > 300, returns "Deploy Sprinklers immediately (Article 21 Compliance)".
+#### [NEW] `server/requirements.txt`
+Dependencies: fastapi, uvicorn, opencv-python, tensorflow, scikit-learn, firebase-admin.
+
+### Frontend (`client/`)
+#### [NEW] `client/`
+React application initialized with Vite + TailwindCSS. Features premium design aesthetics.
+- `/mcd-dashboard`: MCD Governance Dashboard. Uses Leaflet.js to render a map of Delhi with mock ward polygons. Polygons colored by AQI. Sidebar shows "Constitutional Compliance Monitor" (Article 21 priority alerts).
+- `/citizen-app`: Citizen PWA view showing Gamification UI ("Swachh Bharat 2.0 Sentinel" points, segregation streak), and localized AQI stats.
+
+### Models (`models/`)
+#### [NEW] `models/calibration_rf.pkl`
+Placeholder for calibrated AQI model.
+#### [NEW] `models/mobilenet_v2.tflite`
+Placeholder for the waste classification TFLite model.
+
+### Documentation
+#### [NEW] `README.md`
+Root setup instructions on how to build, run, and wire the hardware.
+#### [NEW] `docs/setup.md`
+Additional environmental and Firebase configuration details.
+
+## Verification Plan
+
+### Automated Tests
+- For this MVP, verify compilation and build rather than unit tests.
+
+### Manual Verification
+1. **Hardware**: Flash `firmware/econode.ino` on ESP32 DevKit V1. Verify via Serial Monitor that it connects to WiFi, reads sensors, and pushes to Firebase.
+2. **Backend**: Run `uvicorn main:app --reload` in `server/`. Navigate to `http://localhost:8000/docs` to verify endpoints. Access `/video-feed` to confirm USB webcam activates and streams frames with object detection bounding boxes.
+3. **Frontend**: Run `npm run dev` in `client/`. Visually verify the Dark theme map on `/mcd-dashboard` and the gamified UI on `/citizen-app`, ensuring references to "Viksit Bharat 2047" and "Article 21" are present and visually cohesive.
