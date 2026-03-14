@@ -4,14 +4,20 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-50 antialiased;
+    /* Base styles applying light theme */
+    @apply bg-slate-50 text-slate-900 transition-colors duration-300;
+  }
+
+  /* Dark mode overrides explicitly mapped */
+  .dark body {
+    @apply bg-mcd-dark-bg text-slate-50 transition-colors duration-300;
   }
 }
 
-/* Custom styling for Leaflet Dark Mode */
-.leaflet-layer,
-.leaflet-control-zoom-in,
-.leaflet-control-zoom-out,
-.leaflet-control-attribution {
+/* Custom styling for Leaflet Dark Mode using CSS filters to invert standard light maps */
+.dark .leaflet-layer,
+.dark .leaflet-control-zoom-in,
+.dark .leaflet-control-zoom-out,
+.dark .leaflet-control-attribution {
   filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
