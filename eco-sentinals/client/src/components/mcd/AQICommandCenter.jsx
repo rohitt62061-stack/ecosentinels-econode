@@ -1,78 +1,161 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, Activity } from 'lucide-react';
+import { AlertTriangle, Activity, TrendingDown, Zap } from 'lucide-react';
+
+const AQI_LEVELS = [
+  { max: 50,  label: 'Good',        color: '#2A9D8F', glow: 'rgba(42,157,143,0.5)' },
+  { max: 100, label: 'Satisfactory',color: '#E9C46A', glow: 'rgba(233,196,106,0.5)' },
+  { max: 200, label: 'Moderate',    color: '#FB8B24', glow: 'rgba(251,139,36,0.5)'  },
+  { max: 300, label: 'Poor',        color: '#E36414', glow: 'rgba(227,100,20,0.5)'  },
+  { max: 400, label: 'Very Poor',   color: '#E76F51', glow: 'rgba(231,111,81,0.5)'  },
+  { max: 500, label: 'Severe',      color: '#7B1D1D', glow: 'rgba(123,29,29,0.5)'   },
+];
+
+const getAQIInfo = (value) =>
+  AQI_LEVELS.find(l => value <= l.max) || AQI_LEVELS[AQI_LEVELS.length - 1];
+
+// SVG Circular gauge
+const AQIGauge = ({ value, max = 500 }) => {
+  const r = 80;
+  const cx = 100, cy = 100;
+  const circumference = 2 * Math.PI * r;
+  const filled = Math.min(value / max, 1);
+  const offset = circumference * (1 - filled * 0.75); // 270° arc
+  
+  const info = getAQIInfo(value);
+
+  return (
+    <div className="relative flex items-center justify-center my-4">
+      <svg viewBox="0 0 200 200" className="w-52 h-52 drop-shadow-2xl" style={{ filter: `drop-shadow(0 0 20px ${info.glow})` }}>
+        {/* Defs */}
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={info.color} stopOpacity="1" />
+            <stop offset="100%" stopColor={info.color} stopOpacity="0.6" />
+          </linearGradient>
+        </defs>
+        {/* Background track */}
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth="14"
+          strokeDasharray={`${circumference * 0.75} ${circumference * 0.25}`}
+          strokeDashoffset={circumference * 0.125}
+          strokeLinecap="round"
+          transform="rotate(135, 100, 100)"
+        />
+        {/* Filled arc */}
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke="url(#gaugeGrad)"
+          strokeWidth="14"
+          strokeDasharray={`${circumference * 0.75} ${circumference * 0.25}`}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(135, 100, 100)"
+          style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)' }}
+        />
+        {/* Inner ring subtle glow */}
+        <circle cx={cx} cy={cy} r={64} fill="none" stroke={info.color} strokeWidth="1" strokeOpacity="0.15" />
+
+        {/* Center value */}
+        <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle"
+          fill={info.color} fontSize="38" fontWeight="800" fontFamily="JetBrains Mono, monospace"
+          style={{ filter: `drop-shadow(0 0 8px ${info.glow})` }}
+        >
+          {value}
+        </text>
+        <text x={cx} y={cy + 20} textAnchor="middle" dominantBaseline="middle"
+          fill="rgba(255,255,255,0.5)" fontSize="10" fontWeight="600" fontFamily="Inter, sans-serif" letterSpacing="3"
+        >
+          PM 2.5
+        </text>
+
+        {/* Level label */}
+        <text x={cx} y={162} textAnchor="middle"
+          fill={info.color} fontSize="11" fontWeight="700" fontFamily="Inter, sans-serif" letterSpacing="2"
+        >
+          {info.label.toUpperCase()}
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+const StatChip = ({ icon: IconComponent, label, value, color }) => ( // eslint-disable-line no-unused-vars
+  <div className={`flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-[rgba(255,255,255,0.04)] border border-slate-100 dark:border-mcd-dark-border`}>
+    <div className={`p-1.5 rounded-lg`} style={{ backgroundColor: `${color}20` }}>
+      <IconComponent size={14} style={{ color }} />
+    </div>
+    <div>
+      <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">{label}</p>
+      <p className="text-sm font-bold font-mono text-slate-900 dark:text-white">{value}</p>
+    </div>
+  </div>
+);
 
 const AQICommandCenter = () => {
   const [aqi, setAqi] = useState(0);
-  const targetAqi = 145; // Simulated target value
-  
+  const target = 145;
+
   useEffect(() => {
-    // Animate AQI value on load
-    const interval = setInterval(() => {
-      setAqi(prev => {
-        if (prev < targetAqi) return prev + 5;
-        clearInterval(interval);
-        return targetAqi;
-      });
-    }, 30);
-    return () => clearInterval(interval);
+    let v = 0;
+    const id = setInterval(() => {
+      v = Math.min(v + 6, target);
+      setAqi(v);
+      if (v >= target) clearInterval(id);
+    }, 24);
+    return () => clearInterval(id);
   }, []);
 
-  // Calculate colors based on AQI value
-  const getColors = (value) => {
-    if (value <= 50) return { text: 'text-mcd-success', ring: 'border-mcd-success', shadow: 'shadow-mcd-success/30' };
-    if (value <= 100) return { text: 'text-mcd-warning', ring: 'border-mcd-warning', shadow: 'shadow-mcd-warning/30' };
-    if (value <= 200) return { text: 'text-mcd-accent', ring: 'border-mcd-accent', shadow: 'shadow-mcd-accent/30' };
-    if (value <= 300) return { text: 'text-mcd-secondary', ring: 'border-mcd-secondary', shadow: 'shadow-mcd-secondary/30' };
-    return { text: 'text-mcd-danger', ring: 'border-mcd-danger', shadow: 'shadow-mcd-danger/30' };
-  };
-
-  const colors = getColors(aqi);
+  const info = getAQIInfo(aqi);
 
   return (
-    <div className="bg-white dark:bg-mcd-dark-surface rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-6 transition-colors duration-300">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Activity className="text-mcd-primary" />
-          Live AQI Command Center
+    <div className="rounded-2xl overflow-hidden shadow-card-dark border border-slate-100 dark:border-mcd-dark-border bg-white dark:bg-mcd-dark-surface transition-colors duration-300">
+      {/* Header strip */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-1">
+        <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
+          <Activity size={18} className="text-mcd-primary dark:text-mcd-success" />
+          Live AQI Command
         </h2>
-        <span className="px-3 py-1 bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-full text-xs font-bold font-mono tracking-wider flex items-center gap-1">
-          <AlertTriangle size={14} /> WARD 14 (RED ZONE)
+        <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+          style={{ backgroundColor: `${info.color}20`, color: info.color }}>
+          <AlertTriangle size={11} />
+          WARD&nbsp;14 · RED ZONE
         </span>
       </div>
 
-      {/* Animated Gauge */}
-      <div className="flex flex-col items-center justify-center py-6">
-        <div className={`relative w-48 h-48 rounded-full border-[12px] flex items-center justify-center shadow-xl ${colors.ring} ${colors.shadow} transition-all duration-700 ease-out`}>
-          <div className="absolute inset-2 rounded-full border-4 border-slate-100 dark:border-slate-800/50"></div>
-          <div className="text-center z-10">
-            <span className={`text-6xl font-extrabold font-mono tracking-tighter ${colors.text} drop-shadow-md`}>
-              {aqi}
-            </span>
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest">
-              PM 2.5
-            </p>
-          </div>
-        </div>
+      {/* Gauge */}
+      <div className="px-5">
+        <AQIGauge value={aqi} />
       </div>
 
-      {/* Health Cost Metrics */}
-      <div className="mt-8 mb-6 p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
-              Constitutional Health Cost
-            </p>
-            <p className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-              ₹2.4 Crore <span className="text-sm font-normal text-slate-500">saved this month</span>
-            </p>
-          </div>
-        </div>
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-3 px-5 pb-5">
+        <StatChip icon={TrendingDown} label="Health Saved" value="₹2.4 Cr" color="#2A9D8F" />
+        <StatChip icon={Zap} label="Devices Active" value="1,842" color="#FB8B24" />
       </div>
 
-      {/* Primary Action Button */}
-      <button className="w-full py-4 px-6 rounded-lg bg-gradient-to-r from-mcd-primary to-mcd-secondary hover:from-mcd-secondary hover:to-mcd-primary text-white font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 transform active:scale-95">
-        Deploy Emergency Response
-      </button>
+      {/* Constitutional cost callout */}
+      <div className="mx-5 mb-4 px-4 py-3 rounded-xl bg-gradient-to-r from-[rgba(42,157,143,0.12)] to-[rgba(15,76,92,0.12)] border border-mcd-success/20">
+        <p className="text-[10px] uppercase tracking-widest font-bold text-mcd-success mb-0.5">Constitutional Health Cost</p>
+        <p className="text-lg font-extrabold font-mono text-slate-900 dark:text-white">
+          ₹2.4 Crore <span className="text-sm font-normal text-slate-500 dark:text-slate-400">saved this month</span>
+        </p>
+      </div>
+
+      {/* CTA */}
+      <div className="px-5 pb-5">
+        <button className="w-full py-3.5 rounded-xl font-bold text-white text-sm tracking-wide
+          bg-gradient-to-r from-mcd-primary via-[#0D5F73] to-mcd-secondary
+          hover:opacity-90 active:scale-[0.98] transition-all duration-200
+          shadow-lg hover:shadow-teal-glow
+          flex items-center justify-center gap-2">
+          <Zap size={16} />
+          Deploy Emergency Response
+        </button>
+      </div>
     </div>
   );
 };

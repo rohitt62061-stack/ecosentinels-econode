@@ -1,0 +1,16 @@
+
+> client@0.0.0 lint
+> eslint .
+
+
+D:\safebrowser\ecosentinels-econode\eco-sentinals\client\src\components\mcd\AQICommandCenter.jsx
+  86:27  error  'Icon' is defined but never used  no-unused-vars
+
+D:\safebrowser\ecosentinels-econode\eco-sentinals\client\src\components\mcd\ConstitutionalHeader.jsx
+  61:47  error  'Icon' is defined but never used  no-unused-vars
+
+D:\safebrowser\ecosentinels-econode\eco-sentinals\client\src\pages\CitizenApp.jsx
+  58:41  error  'Icon' is defined but never used  no-unused-vars
+
+Γ£û 3 problems (3 errors, 0 warnings)
+

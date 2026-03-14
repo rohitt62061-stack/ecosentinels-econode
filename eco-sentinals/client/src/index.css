@@ -3,21 +3,189 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    /* Base styles applying light theme */
-    @apply bg-slate-50 text-slate-900 transition-colors duration-300;
+  :root {
+    color-scheme: dark;
+  }
+  
+  html {
+    scroll-behavior: smooth;
   }
 
-  /* Dark mode overrides explicitly mapped */
+  body {
+    @apply antialiased font-sans;
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+
+  /* Light mode */
+  body {
+    background-color: #F8FAFC;
+    color: #0F172A;
+  }
+
+  /* Dark mode */
   .dark body {
-    @apply bg-mcd-dark-bg text-slate-50 transition-colors duration-300;
+    background-color: #0A1929;
+    color: #F8F9FA;
   }
 }
 
-/* Custom styling for Leaflet Dark Mode using CSS filters to invert standard light maps */
-.dark .leaflet-layer,
-.dark .leaflet-control-zoom-in,
-.dark .leaflet-control-zoom-out,
+@layer utilities {
+  /* Glassmorphism utility */
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-dark {
+    background: rgba(19, 47, 76, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-light {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  /* Gradient text */
+  .gradient-text-teal {
+    background: linear-gradient(135deg, #2A9D8F, #0F4C5C);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-amber {
+    background: linear-gradient(135deg, #FB8B24, #E36414);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Leaflet overrides - only in dark mode */
+.dark .leaflet-tile-pane {
+  filter: none; /* CartoDB dark tiles need no filter */
+}
+
+/* Leaflet UI elements */
+.dark .leaflet-control-zoom a {
+  background-color: #132F4C !important;
+  color: #F8F9FA !important;
+  border-color: #1E3A5F !important;
+}
+
 .dark .leaflet-control-attribution {
-  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  background-color: rgba(19, 47, 76, 0.8) !important;
+  color: #94A3B8 !important;
+}
+
+.dark .leaflet-control-attribution a {
+  color: #2A9D8F !important;
+}
+
+/* Smooth popup styling */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.875rem !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background: #132F4C !important;
+  color: #F8F9FA !important;
+}
+
+.dark .leaflet-popup-tip {
+  background: #132F4C !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0F4C5C;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2A9D8F;
+}
+
+/* AQI Gauge animation */
+@keyframes gauge-fill {
+  from { stroke-dashoffset: 565; }
+}
+
+/* Breathing animation for lung */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* Scanning line animation */
+@keyframes scan-line {
+  0% { top: 0%; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.animate-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FB8B24, transparent);
+  box-shadow: 0 0 12px #FB8B24, 0 0 24px rgba(251, 139, 36, 0.4);
+  animation: scan-line 2s linear infinite;
+}
+
+/* Ripple animation for scanner */
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.animate-ripple {
+  animation: ripple 1.5s ease-out infinite;
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 76, 92, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(15, 76, 92, 0); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Number ticker animation */
+@keyframes ticker {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-ticker {
+  animation: ticker 0.4s ease-out forwards;
 }
