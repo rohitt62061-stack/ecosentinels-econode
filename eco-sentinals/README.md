@@ -3,6 +3,8 @@
 ## Overview
 EcoNode is a dual-mode sentinel system for municipal governance, combining hyper-local AQI monitoring and gamified waste segregation, aligned with the 74th Amendment and Swachh Bharat 2.0.
 
+*Detailed Design docs available for review in [System Architecture](file:///d:/safebrowser/ecosentinels-econode/eco-sentinals/docs/architecture/system-overview.md)*
+
 It utilizes a "Split-Brain" architecture:
 - **Edge Node (ESP32)**: Handles local sensors, LEDs, and servos reliably.
 - **Brain (Laptop Server)**: Handles AI inference, webcam feed, and the frontend dashboard.
