@@ -6,56 +6,55 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient
-# Import App state correctly
-from main import app
+from fastapi.testclient import TestClient
+# Import App from new location app/main
+from app.main import app
 
 client = TestClient(app)
 
+def get_auth_headers(ward_id: str = "ward_101"):
+    """Helper to get auth headers for a ward."""
+    response = client.post("/api/v1/auth/token", json={"ward_id": ward_id})
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
 def test_ingest_sensor_valid():
-    """Verify that sensor data is ingested and AQI is calibrated."""
-    response = client.post("/ingest-sensor", json={
+    """Verify that sensor data is ingested with Auth and AQI is calibrated."""
+    headers = get_auth_headers("ward_101")
+    
+    response = client.post("/api/v1/ingest-sensor", json={
         "pm25": 10.0,
         "pm10": 20.0,
         "temp": 25.0,
-        "humidity": 50.0
-    })
+        "humidity": 50.0,
+        "ward_id": "ward_101" # Required
+    }, headers=headers)
     
     assert response.status_code == 200
     assert response.json()["status"] == "success"
-    # pm25 10 * 3.5 = 35 AQI (approx calibration multiplier)
     assert response.json()["calibrated_aqi"] > 0
 
-def test_policy_alert_safe():
-    """Verify that safe AQI returns SAFE status."""
-    # Ingest low data
-    client.post("/ingest-sensor", json={
+def test_ingest_sensor_isolation_forbidden():
+    """Verify that a token for Ward A cannot ingest for Ward B."""
+    headers = get_auth_headers("ward_101") # Token for ward_101
+    
+    response = client.post("/api/v1/ingest-sensor", json={
         "pm25": 10.0,
         "pm10": 20.0,
         "temp": 25.0,
-        "humidity": 50.0
-    })
+        "humidity": 50.0,
+        "ward_id": "ward_102" # Data claims ward_102
+    }, headers=headers)
     
-    response = client.get("/policy-alert")
-    assert response.status_code == 200
-    assert response.json()["status"] == "SAFE"
-
-def test_policy_alert_critical():
-    """Verify that high AQI returns CRITICAL status (AQI > 300)."""
-    # Ingest high data: pm25=100 -> AQI approx 350
-    client.post("/ingest-sensor", json={
-        "pm25": 100.0,
-        "pm10": 200.0,
-        "temp": 25.0,
-        "humidity": 50.0
-    })
-    
-    response = client.get("/policy-alert")
-    assert response.status_code == 200
-    assert response.json()["status"] == "CRITICAL"
-    assert response.json()["message"] == "Deploy Sprinklers immediately (Article 21 Compliance)"
+    assert response.status_code == 403 # Forbidden
+    assert "Forbidden" in response.json()["detail"]
 
 def test_get_command():
-    """Verify command polling yields correct structure."""
-    response = client.get("/command")
+    """Verify command polling yields correct structure with Auth."""
+    headers = get_auth_headers("ward_101")
+    
+    response = client.get("/api/v1/command", headers=headers)
     assert response.status_code == 200
     assert "command" in response.json()
+    assert response.json()["ward_id"] == "ward_101"

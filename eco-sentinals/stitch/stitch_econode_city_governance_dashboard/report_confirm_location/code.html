@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "inverse-on-surface": "#f0f1f2",
+              "surface-tint": "#006d36",
+              "on-tertiary-fixed-variant": "#7b2e25",
+              "on-surface": "#191c1d",
+              "primary-fixed": "#83fba5",
+              "inverse-primary": "#66dd8b",
+              "tertiary-fixed": "#ffdad5",
+              "on-secondary-container": "#556474",
+              "surface-variant": "#e1e3e4",
+              "outline-variant": "#bdcabc",
+              "on-error-container": "#93000a",
+              "on-tertiary": "#ffffff",
+              "on-secondary": "#ffffff",
+              "on-background": "#191c1d",
+              "surface-container-high": "#e7e8e9",
+              "tertiary": "#99443a",
+              "outline": "#6e7a6e",
+              "primary-fixed-dim": "#66dd8b",
+              "on-primary": "#ffffff",
+              "secondary": "#50606f",
+              "surface-container": "#edeeef",
+              "secondary-fixed-dim": "#b8c8da",
+              "on-secondary-fixed-variant": "#394857",
+              "on-surface-variant": "#3e4a3f",
+              "secondary-container": "#d1e1f4",
+              "inverse-surface": "#2e3132",
+              "surface-bright": "#f8f9fa",
+              "primary": "#006d36",
+              "surface-container-highest": "#e1e3e4",
+              "surface-container-low": "#f3f4f5",
+              "secondary-fixed": "#d4e4f6",
+              "surface": "#f8f9fa",
+              "on-tertiary-container": "#782b23",
+              "surface-dim": "#d9dadb",
+              "on-primary-fixed-variant": "#005227",
+              "on-primary-fixed": "#00210c",
+              "on-primary-container": "#005025",
+              "error": "#ba1a1a",
+              "tertiary-container": "#ff9587",
+              "on-error": "#ffffff",
+              "background": "#f8f9fa",
+              "surface-container-lowest": "#ffffff",
+              "primary-container": "#50c878",
+              "on-secondary-fixed": "#0d1d2a",
+              "tertiary-fixed-dim": "#ffb4a9",
+              "on-tertiary-fixed": "#3f0302",
+              "error-container": "#ffdad6"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .map-container {
+            mask-image: linear-gradient(to top, transparent, black 15%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container/30">
+<header class="w-full top-0 sticky z-50 bg-slate-50 dark:bg-slate-900">
+<div class="flex items-center justify-between px-6 h-16 w-full max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors duration-200 ease-in-out text-emerald-700 dark:text-emerald-400">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-manrope font-bold text-lg tracking-tight text-on-surface">Report Issue</h1>
+</div>
+<div class="text-xl font-extrabold text-emerald-800 dark:text-emerald-300">
+                CIVIC<span class="text-emerald-500">EYE</span>
+</div>
+</div>
+</header>
+<main class="relative h-[calc(100vh-64px)] w-full overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover filter contrast-[1.1] grayscale-[0.2]" data-alt="Detailed city map of Delhi with streets" data-location="Delhi, India" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIFOABF9-oQT-mEpDeibaB_wpz-WtpQdr4oj0dmGZzgkhaCWkahDLZSaO54F4K5XXKdav4RJMjPcVl-2X5pt54cYlpZd1eCo-qYOj06qeRVVbmLyQsx1TE-tuvbcUcYi0-bdif6_r-a_pSYAtYy6qwjWr1NUHB8oD2hC_qKbYwo7j7YAavL6hJrnNmKxBp1huvxAGfVWRQyUHdZ9BNZdeU8OM1-7Ys33CeM38qlttdNdSP2e2ghLpQ-Dr9iX1k0cTe-q2NknZfyl4"/>
+<div class="absolute inset-0 bg-secondary/10 pointer-events-none"></div>
+</div>
+<div class="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-lg z-20">
+<div class="bg-surface-container-lowest/70 backdrop-blur-xl rounded-2xl p-2 shadow-[0px_20px_40px_rgba(0,0,0,0.06)] flex items-center gap-3 px-4 h-14 border border-outline-variant/15">
+<span class="material-symbols-outlined text-primary" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="flex flex-col">
+<span class="font-label text-[10px] font-bold uppercase tracking-wider text-secondary">Current Location</span>
+<span class="font-body text-sm font-semibold text-on-surface truncate">Connaught Place, New Delhi, Delhi 110001</span>
+</div>
+<button class="ml-auto w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="close">close</span>
+</button>
+</div>
+</div>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+<div class="relative flex flex-col items-center">
+<div class="mb-8 flex flex-col items-center">
+<div class="w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-2xl ring-4 ring-primary/20 animate-bounce">
+<span class="material-symbols-outlined text-2xl" data-icon="push_pin" style="font-variation-settings: 'FILL' 1;">push_pin</span>
+</div>
+<div class="w-2 h-2 bg-on-surface/40 rounded-full mt-1 blur-[1px]"></div>
+</div>
+</div>
+</div>
+<div class="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
+<button class="w-12 h-12 rounded-full bg-surface-container-lowest/80 backdrop-blur-md shadow-lg flex items-center justify-center text-secondary hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined" data-icon="my_location">my_location</span>
+</button>
+<div class="flex flex-col rounded-full bg-surface-container-lowest/80 backdrop-blur-md shadow-lg overflow-hidden">
+<button class="w-12 h-12 flex items-center justify-center text-secondary hover:bg-surface-bright border-b border-outline-variant/10 transition-colors">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center text-secondary hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+</div>
+<button class="w-12 h-12 rounded-full bg-surface-container-lowest/80 backdrop-blur-md shadow-lg flex items-center justify-center text-secondary hover:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 w-full z-30 p-6 pb-10">
+<div class="max-w-xl mx-auto space-y-4">
+<div class="bg-surface-container-lowest/80 backdrop-blur-2xl rounded-3xl p-6 shadow-[0px_-10px_30px_rgba(0,0,0,0.04)] border border-outline-variant/15">
+<div class="flex items-start gap-4 mb-6">
+<div class="w-12 h-12 rounded-2xl bg-primary-container/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="verified_user">verified_user</span>
+</div>
+<div>
+<h2 class="font-headline text-lg font-bold text-on-surface leading-tight">Confirm Location</h2>
+<p class="font-body text-sm text-secondary mt-1">Is this the exact spot where the issue was observed? Drag the map to adjust.</p>
+</div>
+</div>
+<button class="w-full h-16 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-2xl font-headline font-bold text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary/20 active:scale-[0.98] transition-all duration-150">
+                        Submit Report
+                        <span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-50 rounded-t-3xl shadow-[0px_-10px_30px_rgba(0,0,0,0.04)] md:hidden">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-emerald-500 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-emerald-500 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-100 rounded-2xl px-5 py-2 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Report</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-5 py-2 hover:text-emerald-500 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Profile</span>
+</a>
+</nav>
+</body></html>
