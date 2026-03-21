@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: aqi-forecast-service
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn aqi_forecast_service:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+
+  - type: web
+    name: source-detection-service
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn source_detection_service:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false

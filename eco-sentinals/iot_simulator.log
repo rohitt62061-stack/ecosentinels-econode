@@ -1,0 +1,39 @@
+Fetching ward IDs from Supabase...
+Found 5 wards. Distributing bins...
+Bins initialized successfully!
+
+--- Cycle [1] starting at 18:00:16 ---
+Supabase Insert Error in Cycle [1]: {'message': 'new row violates row-level security policy for table "iot_sensor_readings"', 'code': '42501', 'hint': None, 'details': None}
+Retrying in 30 seconds...
+
+--- Cycle [1] starting at 18:00:47 ---
+Supabase Insert Error in Cycle [1]: {'message': 'new row violates row-level security policy for table "iot_sensor_readings"', 'code': '42501', 'hint': None, 'details': None}
+Retrying in 30 seconds...
+
+--- Cycle [1] starting at 18:01:21 ---
+Cycle [1] ù 20 bins updated at 18:01:22
+
+--- Cycle [2] starting at 18:06:22 ---
+Cycle [2] ù 20 bins updated at 18:06:24
+
+--- Cycle [3] starting at 18:11:24 ---
+Cycle [3] ù 20 bins updated at 18:11:25
+
+--- Cycle [4] starting at 18:16:25 ---
+Cycle [4] ù 20 bins updated at 18:16:27
+
+--- Cycle [5] starting at 18:21:27 ---
+Cycle [5] ù 20 bins updated at 18:21:29
+
+--- Cycle [6] starting at 18:26:29 ---
+Cycle [6] ù 20 bins updated at 18:26:30
+
+--- Cycle [7] starting at 18:31:30 ---
+Cycle [7] ù 20 bins updated at 18:31:32
+
+--- Cycle [8] starting at 18:36:32 ---
+Cycle [8] ù 20 bins updated at 18:36:33
+
+--- Cycle [9] starting at 18:41:33 ---
+[BIN_002] reached 100%! Resetting to 5% (emptied).
+Cycle [9] ù 20 bins updated at 18:41:41
