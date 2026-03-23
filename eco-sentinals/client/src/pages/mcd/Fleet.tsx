@@ -4,6 +4,8 @@ import { supabase } from '../../utils/supabase';
 import { 
   Trash2, Battery, AlertCircle, Filter, CheckCircle, RefreshCw 
 } from 'lucide-react';
+import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface BinReading {
   id: string;
@@ -35,6 +37,69 @@ export default function Fleet() {
 
   // Stats
   const [stats, setStats] = useState<SummaryStats>({ total: 0, needsCollection: 0, avgFill: 0 });
+
+  // Optimizer States
+  const [optimizing, setOptimizing] = useState(false);
+  const [routes, setRoutes] = useState<any[]>([]);
+
+  const optimizeRoutes = async () => {
+    try {
+      setOptimizing(true);
+      const fullyBins = bins.filter(b => (selectedWard === 'all' || b.ward_id === selectedWard) && b.fill_level_pct > 70);
+
+      if (fullyBins.length < 3) {
+        alert("No collection needed today — all bins under 70%");
+        return;
+      }
+
+      const chunk = Math.ceil(fullyBins.length / 3);
+      const groups = [fullyBins.slice(0, chunk), fullyBins.slice(chunk, chunk * 2), fullyBins.slice(chunk * 2)];
+
+      const fetchedRoutes = [];
+      for (let i = 0; i < groups.length; i++) {
+        const group = groups[i];
+        if (group.length === 0) continue;
+        const coords = group.map(b => `${b.longitude},${b.latitude}`).join(';');
+        
+        const res = await fetch(`http://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
+        const data = await res.json();
+        
+        if (data.routes && data.routes[0]) {
+          fetchedRoutes.push({
+            truckId: i + 1,
+            binsCount: group.length,
+            distance: data.routes[0].distance / 1000,
+            duration: data.routes[0].duration / 60,
+            geometry: data.routes[0].geometry.coordinates.map((pos: any) => [pos[1], pos[0]]) // [lat, lng]
+          });
+        }
+      }
+      setRoutes(fetchedRoutes);
+    } catch (err) {
+      console.error("Route Optimization Error:", err);
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const saveRoutes = async () => {
+    try {
+      const { error } = await supabase.from('fleet_routes').insert(
+        routes.map(r => ({
+          ward_id: selectedWard !== 'all' ? selectedWard : null,
+          truck_id: r.truckId,
+          total_distance: r.distance,
+          estimated_duration: r.duration,
+          route_geometry: r.geometry,
+          captured_at: new Date().toISOString()
+        }))
+      );
+      if (error) throw error;
+      alert("Routes saved to manifest securely");
+    } catch (err: any) {
+       alert("Failed saving: " + err.message);
+    }
+  };
 
   useEffect(() => {
     fetchWards();
@@ -257,6 +322,80 @@ export default function Fleet() {
             No bins found matching filters setups layouts framing.
           </div>
         )}
+
+        {/* Route Optimizer Panel */}
+        <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-slate-200 uppercase tracking-wide">Route Optimizer</h3>
+              <p className="text-[11px] text-slate-500">Autonomous collection tracking utilizing OSRM APIs</p>
+            </div>
+            <button 
+              onClick={optimizeRoutes}
+              disabled={optimizing || selectedWard === 'all'}
+              className={`px-4 py-2 rounded-xl border text-xs font-black transition-all ${
+                selectedWard === 'all' 
+                  ? 'bg-slate-950 border-slate-900 text-slate-700 cursor-not-allowed' 
+                  : 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500/20 shadow-lg shadow-emerald-500/10'
+              }`}
+            >
+              {optimizing ? 'Calculating...' : 'Optimize routes'}
+            </button>
+          </div>
+
+          {routes.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                {routes.map(r => (
+                  <div key={r.truckId} className="bg-slate-950/60 border border-slate-900 p-3 rounded-xl flex flex-col gap-1.5 relative overflow-hiddenGroup">
+                     <div className="flex items-center justify-between">
+                       <span className={`text-[11px] font-black uppercase tracking-wide ${r.truckId === 1 ? 'text-blue-400' : r.truckId === 2 ? 'text-purple-400' : 'text-amber-400'}`}>
+                         Truck #{r.truckId}
+                       </span>
+                       <span className="text-[10px] text-slate-500">{r.binsCount} full bins</span>
+                     </div>
+                     <div className="grid grid-cols-2 gap-2 text-xs">
+                       <div className="flex flex-col">
+                         <span className="text-[10px] text-slate-500">Distance</span>
+                         <span className="font-bold text-slate-200">{r.distance.toFixed(1)} km</span>
+                       </div>
+                       <div className="flex flex-col">
+                         <span className="text-[10px] text-slate-500">Duration</span>
+                         <span className="font-bold text-slate-200">{Math.round(r.duration)} mins</span>
+                       </div>
+                     </div>
+                     <div className="mt-1 text-[10px] text-emerald-400 font-bold">
+                       Emission Saved: <span className="text-slate-200">{Math.max(0, (60 - r.distance) * 0.21).toFixed(1)} kg CO₂</span>
+                     </div>
+                  </div>
+                ))}
+                
+                <button 
+                  onClick={saveRoutes}
+                  className="w-full py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors mt-1"
+                >
+                  Save Route Manifest
+                </button>
+              </div>
+
+              {/* Small Map Container */}
+              <div className="h-48 md:h-auto bg-slate-950 rounded-xl border border-slate-900 overflow-hidden relative z-10">
+                {/* @ts-ignore */}
+                <MapContainer center={[28.6139, 77.2090] as [number, number]} zoom={12} className="w-full h-full">
+                   <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                   {routes.map(r => (
+                      /* @ts-ignore */
+                      <Polyline 
+                        key={r.truckId} 
+                        positions={r.geometry as [number, number][]} 
+                        pathOptions={{ color: r.truckId === 1 ? '#60a5fa' : r.truckId === 2 ? '#a78bfa' : '#fbbf24', weight: 4 }}
+                      />
+                   ))}
+                </MapContainer>
+              </div>
+            </div>
+          )}
+        </div>
 
       </div>
     </McdLayout>

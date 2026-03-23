@@ -12,27 +12,55 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function fetchRoleFromProfile(userId: string): Promise<UserRole> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data?.role) {
+    // Fallback: guess from email domain if profile row doesn't exist yet
+    return null;
+  }
+  return data.role as UserRole;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<any>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
 
+  const resolveRole = async (sess: any) => {
+    if (!sess) {
+      setRole(null);
+      return;
+    }
+    // Try profiles table first
+    const profileRole = await fetchRoleFromProfile(sess.user.id);
+    if (profileRole) {
+      setRole(profileRole);
+      return;
+    }
+    // Fallback: derive from email domain
+    const email: string = sess.user.email || '';
+    if (email.endsWith('@mcdindia.gov.in') || email.endsWith('@delhi.gov.in') || email.endsWith('@ndmc.gov.in')) {
+      setRole('mcd');
+    } else {
+      setRole('citizen');
+    }
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      if (session) {
-        setRole(session.user.email?.endsWith('@mcdindia.gov.in') ? 'mcd' : 'citizen');
-      }
+      await resolveRole(session);
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
-      if (session) {
-        setRole(session.user.email?.endsWith('@mcdindia.gov.in') ? 'mcd' : 'citizen');
-      } else {
-        setRole(null);
-      }
+      await resolveRole(session);
       setLoading(false);
     });
 

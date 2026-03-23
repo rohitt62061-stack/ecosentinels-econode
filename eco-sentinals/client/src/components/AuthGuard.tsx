@@ -17,8 +17,9 @@ export default function AuthGuard({ requiredRole }: { requiredRole: 'mcd' | 'cit
   }
 
   if (requiredRole && role !== requiredRole) {
-    return <Navigate to={role === 'mcd' ? "/mcd/dashboard" : "/citizen/home"} replace />;
+    return <Navigate to={role === 'mcd' ? '/mcd/dashboard' : '/citizen/home'} replace />;
   }
 
   return <Outlet />;
 }
+

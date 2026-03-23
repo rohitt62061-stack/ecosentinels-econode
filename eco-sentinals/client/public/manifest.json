@@ -1,0 +1,16 @@
+{
+  "name": "EcoNode",
+  "short_name": "EcoNode",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f0c",
+  "theme_color": "#10b981",
+  "description": "Hyper-Local Air & Waste Intelligence Platform",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import McdLayout from '../../components/McdLayout';
 import { supabase } from '../../utils/supabase';
-import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Settings, RefreshCw, AlertTriangle, ArrowRight } from 'lucide-react';
 
 // Declare Leaflet global object from CDN
@@ -38,6 +38,11 @@ export default function Wards() {
   const [history, setHistory] = useState<HistoricalAQI[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // ML States
+  const [forecast, setForecast] = useState<any[]>([]);
+  const [loadingForecast, setLoadingForecast] = useState(false);
+  const [sourceDetection, setSourceDetection] = useState<any | null>(null);
 
   // Stats Counters
   const [stats, setStats] = useState({
@@ -121,6 +126,42 @@ export default function Wards() {
     }
   };
 
+  const fetchForecast = async (wardId: string) => {
+    setLoadingForecast(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('forecast-aqi', {
+        body: { ward_id: wardId }
+      });
+      if (error) throw error;
+      if (data?.predictions) {
+        setForecast(data.predictions);
+      }
+    } catch (err) {
+      console.error('Forecast fetch error:', err);
+      setForecast([]);
+    } finally {
+      setLoadingForecast(false);
+    }
+  };
+
+  const fetchSourceDetection = async (wardId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('pollution_detections')
+        .select('*')
+        .eq('ward_id', wardId)
+        .order('detected_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      setSourceDetection(data);
+    } catch (err) {
+      console.error('Source detection error:', err);
+      setSourceDetection(null);
+    }
+  };
+
   const updateMarkers = (data: WardData[]) => {
     if (!mapInstance.current) return;
 
@@ -149,6 +190,8 @@ export default function Wards() {
       circle.on('click', () => {
         setSelectedWard(ward);
         fetchHistory(ward.ward_id);
+        fetchForecast(ward.ward_id);
+        fetchSourceDetection(ward.ward_id);
       });
 
       markersRef.current.push(circle);
@@ -304,13 +347,69 @@ export default function Wards() {
                 </div>
               </div>
 
+              {/* 24h AI Forecast Chart */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">AI Forecast (24h)</p>
+                  {forecast.length > 1 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      forecast[forecast.length - 1].aqi > forecast[0].aqi ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'
+                    }`}>
+                      {forecast[forecast.length - 1].aqi > forecast[0].aqi ? '↑ Rising' : '↓ Falling'}
+                    </span>
+                  )}
+                </div>
+                <div className="h-40 bg-slate-800/20 border border-dotted border-slate-700/50 rounded-xl p-2">
+                  {loadingForecast ? (
+                    <div className="flex items-center justify-center h-full text-slate-500 text-sm animate-pulse">Computing forecast...</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={forecast}>
+                        <XAxis dataKey="hour" hide />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
+                        />
+                        <Area type="monotone" dataKey="aqi" stroke="#38bdf8" strokeDasharray="3 3" fill="url(#colorAqi)" strokeWidth={2} />
+                        <defs>
+                          <linearGradient id="colorAqi" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#38bdf8" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
               {/* Source & Actions */}
               <div className="bg-slate-800/30 p-3 rounded-xl border border-slate-700/30 space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle size={16} className="text-amber-400" />
                   <span className="text-xs font-semibold text-slate-300">Pollution Source:</span>
-                  <span className="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">Construction Dust</span>
+                  {sourceDetection ? (
+                    <div className="flex items-center gap-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-md border font-medium ${
+                        sourceDetection.source_type === 'construction_dust' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                        sourceDetection.source_type === 'biomass_burning' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                        sourceDetection.source_type === 'vehicle_exhaust' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' :
+                        sourceDetection.source_type === 'industrial' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-slate-500/10 text-slate-300 border-slate-500/20'
+                      }`}>
+                        {sourceDetection.source_type.replace('_', ' ')}
+                      </span>
+                      {sourceDetection.confidence_score > 0.70 && (
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-500 italic">No active source detected</span>
+                  )}
                 </div>
+                {sourceDetection && (
+                  <p className="text-[10px] text-slate-500">
+                    Confidence: {(sourceDetection.confidence_score * 100).toFixed(0)}% • {new Date(sourceDetection.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                  </p>
+                )}
                 <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors mt-2">
                   View Policy Recommendations <ArrowRight size={14} />
                 </button>

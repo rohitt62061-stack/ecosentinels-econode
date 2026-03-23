@@ -5,7 +5,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
 import { 
-  AlertTriangle, ArrowDown, ArrowUp, BarChart2, Download, RefreshCw 
+  AlertTriangle, ArrowDown, ArrowUp, BarChart2, Download, RefreshCw, ArrowRight 
 } from 'lucide-react';
 
 interface Ward {
@@ -55,6 +55,28 @@ export default function Dashboard() {
   const [peakAqi, setPeakAqi] = useState<{ value: number; time: string } | null>(null);
   const [lowestAqi, setLowestAqi] = useState<number>(0);
   const [percentUnhealthy, setPercentUnhealthy] = useState<number>(0);
+  
+  // Forecast states
+  const [forecasts, setForecasts] = useState<Record<string, any[]>>({});
+
+  useEffect(() => {
+    if (wards.length > 0) {
+      wards.forEach(w => fetchWardForecast(w.id));
+    }
+  }, [wards]);
+
+  const fetchWardForecast = async (wardId: string) => {
+    try {
+      const { data } = await supabase.functions.invoke('forecast-aqi', {
+        body: { ward_id: wardId }
+      });
+      if (data?.predictions) {
+        setForecasts(prev => ({ ...prev, [wardId]: data.predictions }));
+      }
+    } catch (err) {
+      console.error(`Forecast error for ${wardId}:`, err);
+    }
+  };
 
   useEffect(() => {
     fetchWards();
@@ -309,6 +331,25 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Active Alerts Bar */}
+        {alerts.slice(0, 5).length > 0 && (
+          <div className="bg-rose-950/30 border border-rose-900/50 rounded-xl px-4 py-2 flex items-center gap-4 overflow-x-auto">
+            <div className="flex items-center gap-1.5 text-rose-500 font-bold text-xs shrink-0">
+              <AlertTriangle size={14} className="animate-pulse" /> ACTIVE ALERTS:
+            </div>
+            <div className="flex items-center gap-3 text-sm flex-1">
+              {alerts.map(a => (
+                <div key={a.id} className="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800 shrink-0">
+                  <span className="font-semibold text-xs text-white">{a.wards?.ward_name}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] uppercase font-bold border border-rose-500/20">{a.source_type.replace('_', ' ')}</span>
+                  <span className="text-[10px] text-slate-500">{new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <button className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">Policy <ArrowRight size={10} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Dashboard Grid Content */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           
@@ -391,6 +432,37 @@ export default function Dashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <p className="text-slate-500 text-center py-10">No readings to show</p>}
+              </div>
+            </div>
+
+            {/* Forecast Sparkline Grid */}
+            <div className="bg-slate-900/50 border border-slate-900 p-5 rounded-xl">
+              <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                <span>24h AI Forecast Trends</span>
+                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] border border-blue-500/20">All Wards</span>
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+                {wards.map(w => {
+                  const forecastData = forecasts[w.id] || [];
+                  const maxAqi = forecastData.length > 0 ? Math.max(...forecastData.map(d => d.aqi)) : 0;
+                  const strokeColor = maxAqi > 150 ? '#f43f5e' : maxAqi > 100 ? '#f59e0b' : '#10b981';
+                  return (
+                    <div key={w.id} className="bg-slate-950/50 border border-slate-800/80 p-3 rounded-xl flex flex-col hover:bg-slate-900/50 transition-colors cursor-pointer" onClick={() => setSelectedWard(w.id)}>
+                      <span className="text-xs font-semibold text-slate-300 truncate">{w.ward_name}</span>
+                      <div className="h-14 mt-2">
+                        {forecastData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={forecastData}>
+                              <Line type="monotone" dataKey="aqi" stroke={strokeColor} strokeWidth={1.5} dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-full flex items-center justify-center text-[10px] text-slate-600 animate-pulse">Loading...</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
