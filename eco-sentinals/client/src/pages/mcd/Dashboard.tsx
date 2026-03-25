@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import McdLayout from '../../components/McdLayout';
 import { supabase } from '../../utils/supabase';
 import { 
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine 
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine 
 } from 'recharts';
 import { 
-  AlertTriangle, ArrowDown, ArrowUp, BarChart2, Download, RefreshCw, ArrowRight 
+  AlertTriangle, Download, RefreshCw, ArrowRight 
 } from 'lucide-react';
 
 interface Ward {
@@ -116,10 +116,14 @@ export default function Dashboard() {
     }
   }, [selectedWard, timeRange, pollutant, wards]);
 
+
   const fetchWards = async () => {
-    const { data } = await supabase.from('wards').select('id, ward_name').order('ward_name');
+    const { data, error } = await supabase.from('wards').select('id, ward_name').order('ward_name');
+    if (error) console.error('Error fetching wards:', error.message);
     if (data) setWards(data);
   };
+
+
 
   const fetchAlerts = async () => {
     // Last 6 hours = 6 * 60 * 60 * 1000 ms
@@ -139,11 +143,6 @@ export default function Dashboard() {
       const targetWard = selectedWard || wards[0]?.id;
       if (!targetWard) return;
 
-      let intervalString = '24 hours';
-      if (timeRange === '7d') intervalString = '7 days';
-      if (timeRange === '30d') intervalString = '30 days';
-      if (timeRange === '3m') intervalString = '3 months';
-
       const pastDate = new Date();
       if (timeRange === '24h') pastDate.setHours(pastDate.getHours() - 24);
       else if (timeRange === '7d') pastDate.setDate(pastDate.getDate() - 7);
@@ -162,6 +161,7 @@ export default function Dashboard() {
         setReadings(data);
         calculateStats(data);
       }
+
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -275,13 +275,13 @@ export default function Dashboard() {
 
   return (
     <McdLayout>
-      <div className="p-6 bg-slate-950 min-h-full text-slate-100 flex flex-col gap-6 overflow-y-auto">
+      <div className="p-6 bg-[var(--bg-primary)] min-h-full text-[var(--text-primary)] flex flex-col gap-6 overflow-y-auto transition-colors duration-300">
         
         {/* Header and Controls */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-900 pb-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
           <div>
             <h1 className="text-2xl font-black font-manrope tracking-tight">Analytics Dashboard</h1>
-            <p className="text-sm text-slate-400">Hyper-local air quality intelligence overviews</p>
+            <p className="text-sm text-[var(--text-secondary)]">Hyper-local air quality intelligence overviews</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
@@ -289,18 +289,18 @@ export default function Dashboard() {
             <select 
               value={selectedWard} 
               onChange={(e) => setSelectedWard(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-200 outline-none focus:border-emerald-500"
+              className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--text-primary)] outline-none focus:border-emerald-500"
             >
               {wards.map(w => <option key={w.id} value={w.id}>{w.ward_name}</option>)}
             </select>
 
             {/* Time Range */}
-            <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <div className="flex bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-0.5">
               {(['24h', '7d', '30d', '3m'] as const).map(r => (
                 <button 
                   key={r} 
                   onClick={() => setTimeRange(r)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${timeRange === r ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${timeRange === r ? 'bg-emerald-500 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
                   {r.toUpperCase()}
                 </button>
@@ -308,12 +308,12 @@ export default function Dashboard() {
             </div>
 
             {/* Pollutant Toggle */}
-            <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <div className="flex bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-0.5">
               {(['aqi', 'pm25', 'pm10', 'no2', 'so2'] as const).map(p => (
                 <button 
                   key={p} 
                   onClick={() => setPollutant(p)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${pollutant === p ? 'bg-amber-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${pollutant === p ? 'bg-amber-500 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
                   {p.toUpperCase()}
                 </button>
@@ -323,7 +323,7 @@ export default function Dashboard() {
             {/* Export */}
             <button 
               onClick={downloadCSV}
-              className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-sm border border-slate-700"
+              className="flex items-center gap-1 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 text-[var(--text-primary)] px-3 py-1.5 rounded-lg text-sm border border-[var(--border)]"
             >
               <Download size={16} />
               <span>CSV</span>
@@ -339,10 +339,10 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-3 text-sm flex-1">
               {alerts.map(a => (
-                <div key={a.id} className="flex items-center gap-2 bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800 shrink-0">
-                  <span className="font-semibold text-xs text-white">{a.wards?.ward_name}</span>
+                <div key={a.id} className="flex items-center gap-2 bg-[var(--bg-secondary)]/50 px-3 py-1 rounded-lg border border-[var(--border)] shrink-0">
+                  <span className="font-semibold text-xs text-[var(--text-primary)]">{a.wards?.ward_name}</span>
                   <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 text-[10px] uppercase font-bold border border-rose-500/20">{a.source_type.replace('_', ' ')}</span>
-                  <span className="text-[10px] text-slate-500">{new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-[10px] text-[var(--text-muted)]">{new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   <button className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">Policy <ArrowRight size={10} /></button>
                 </div>
               ))}
@@ -358,43 +358,43 @@ export default function Dashboard() {
             
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-slate-900/50 border border-slate-900 p-4 rounded-xl flex flex-col">
-                <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Avg {getPollutantLabel()}</span>
+              <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-4 rounded-xl flex flex-col">
+                <span className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">Avg {getPollutantLabel()}</span>
                 <span className="text-3xl font-black mt-1 text-emerald-400">{avgAqi}</span>
               </div>
-              <div className="bg-slate-900/50 border border-slate-900 p-4 rounded-xl flex flex-col">
-                <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Peak {getPollutantLabel()}</span>
+              <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-4 rounded-xl flex flex-col">
+                <span className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">Peak {getPollutantLabel()}</span>
                 {peakAqi ? (
                   <div className="flex items-baseline gap-2 mt-1">
                     <span className="text-3xl font-black text-rose-500">{peakAqi.value}</span>
-                    <span className="text-[10px] text-slate-400 truncate max-w-[80px]">@{new Date(peakAqi.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[80px]">@{new Date(peakAqi.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 ) : <span className="text-3xl font-black mt-1">-</span>}
               </div>
-              <div className="bg-slate-900/50 border border-slate-900 p-4 rounded-xl flex flex-col">
-                <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Lowest {getPollutantLabel()}</span>
+              <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-4 rounded-xl flex flex-col">
+                <span className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">Lowest {getPollutantLabel()}</span>
                 <span className="text-3xl font-black mt-1 text-blue-400">{lowestAqi}</span>
               </div>
-              <div className="bg-slate-900/50 border border-slate-900 p-4 rounded-xl flex flex-col">
-                <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">% time Unhealthy</span>
+              <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-4 rounded-xl flex flex-col">
+                <span className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">% time Unhealthy</span>
                 <span className="text-3xl font-black mt-1 text-amber-500">{percentUnhealthy}%</span>
               </div>
             </div>
 
             {/* LineChart Card */}
-            <div className="bg-slate-900/50 border border-slate-900 p-5 rounded-xl flex-1 flex flex-col">
-              <h3 className="text-sm font-bold text-slate-300 mb-4">{getPollutantLabel()} Trends</h3>
+            <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-5 rounded-xl flex-1 flex flex-col">
+              <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-4">{getPollutantLabel()} Trends</h3>
               <div className="flex-1 h-[300px]">
                 {readings.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={readings}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="recorded_at" stroke="#64748b" tickFormatter={formatXAxis} style={{ fontSize: '10px' }} />
-                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="recorded_at" stroke="var(--text-muted)" tickFormatter={formatXAxis} style={{ fontSize: '10px' }} />
+                      <YAxis stroke="var(--text-muted)" style={{ fontSize: '10px' }} />
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }}
-                        labelStyle={{ color: '#94a3b8' }}
-                        itemStyle={{ color: '#f1f5f9' }}
+                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+                        labelStyle={{ color: 'var(--text-muted)' }}
+                        itemStyle={{ color: 'var(--text-primary)' }}
                         labelFormatter={(label) => new Date(label).toLocaleString()}
                       />
                       <Line type="monotone" dataKey={pollutant === 'aqi' ? 'aqi_value' : pollutant} stroke={pollutant === 'aqi' ? '#10b981' : '#f59e0b'} strokeWidth={3} dot={false} />
@@ -418,26 +418,26 @@ export default function Dashboard() {
             </div>
 
             {/* BarChart Card (Category bands) */}
-            <div className="bg-slate-900/50 border border-slate-900 p-5 rounded-xl">
-              <h3 className="text-sm font-bold text-slate-300 mb-4">AQI Category Distribution Counts</h3>
+            <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-5 rounded-xl">
+              <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-4">AQI Category Distribution Counts</h3>
               <div className="h-[200px]">
                 {readings.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={getBarChartData()}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                      <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '10px' }} />
-                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} />
-                      <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="name" stroke="var(--text-muted)" style={{ fontSize: '10px' }} />
+                      <YAxis stroke="var(--text-muted)" style={{ fontSize: '10px' }} />
+                      <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }} />
                       <Bar dataKey="Count" />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-slate-500 text-center py-10">No readings to show</p>}
+                ) : <p className="text-[var(--text-muted)] text-center py-10">No readings to show</p>}
               </div>
             </div>
 
             {/* Forecast Sparkline Grid */}
-            <div className="bg-slate-900/50 border border-slate-900 p-5 rounded-xl">
-              <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+            <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-5 rounded-xl">
+              <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-4 flex items-center gap-2">
                 <span>24h AI Forecast Trends</span>
                 <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] border border-blue-500/20">All Wards</span>
               </h3>
@@ -447,8 +447,8 @@ export default function Dashboard() {
                   const maxAqi = forecastData.length > 0 ? Math.max(...forecastData.map(d => d.aqi)) : 0;
                   const strokeColor = maxAqi > 150 ? '#f43f5e' : maxAqi > 100 ? '#f59e0b' : '#10b981';
                   return (
-                    <div key={w.id} className="bg-slate-950/50 border border-slate-800/80 p-3 rounded-xl flex flex-col hover:bg-slate-900/50 transition-colors cursor-pointer" onClick={() => setSelectedWard(w.id)}>
-                      <span className="text-xs font-semibold text-slate-300 truncate">{w.ward_name}</span>
+                    <div key={w.id} className="bg-[var(--bg-primary)]/50 border border-[var(--border)] p-3 rounded-xl flex flex-col hover:bg-[var(--bg-tertiary)]/50 transition-colors cursor-pointer" onClick={() => setSelectedWard(w.id)}>
+                      <span className="text-xs font-semibold text-[var(--text-secondary)] truncate">{w.ward_name}</span>
                       <div className="h-14 mt-2">
                         {forecastData.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
@@ -457,7 +457,7 @@ export default function Dashboard() {
                             </LineChart>
                           </ResponsiveContainer>
                         ) : (
-                          <div className="h-full flex items-center justify-center text-[10px] text-slate-600 animate-pulse">Loading...</div>
+                          <div className="h-full flex items-center justify-center text-[10px] text-[var(--text-muted)] animate-pulse">Loading...</div>
                         )}
                       </div>
                     </div>
@@ -469,8 +469,8 @@ export default function Dashboard() {
           </div>
 
           {/* Right Panel: Alerts & Detections */}
-          <div className="bg-slate-900/50 border border-slate-900 p-5 rounded-xl flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+          <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-5 rounded-xl flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-[var(--text-secondary)] flex items-center gap-2">
               <AlertTriangle className="text-amber-500" size={16} />
               <span>Realtime Policy Detections</span>
             </h3>
@@ -478,10 +478,10 @@ export default function Dashboard() {
             <div className="flex flex-col gap-3 flex-1 overflow-y-auto">
               {alerts.length > 0 ? (
                 alerts.map(a => (
-                  <div key={a.id} className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl flex flex-col gap-2 relative">
+                  <div key={a.id} className="bg-[var(--bg-primary)]/80 border border-[var(--border)] p-3 rounded-xl flex flex-col gap-2 relative">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-white">{a.wards?.ward_name || 'Unknown Ward'}</span>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="font-bold text-xs text-[var(--text-primary)]">{a.wards?.ward_name || 'Unknown Ward'}</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">
                         {new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -496,7 +496,7 @@ export default function Dashboard() {
                   </div>
                 ))
               ) : (
-                <div className="flex-1 flex items-center justify-center text-slate-600 text-center text-xs italic">
+                <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] text-center text-xs italic">
                   No active policy alerts in last 6h
                 </div>
               )}

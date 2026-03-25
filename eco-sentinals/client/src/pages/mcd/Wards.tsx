@@ -3,6 +3,7 @@ import McdLayout from '../../components/McdLayout';
 import { supabase } from '../../utils/supabase';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Settings, RefreshCw, AlertTriangle, ArrowRight } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 // Declare Leaflet global object from CDN
 declare const L: any;
@@ -24,13 +25,15 @@ interface WardData {
 }
 
 interface HistoricalAQI {
-  recorded_at: string;
+  time: string;
   aqi_value: number;
 }
 
 export default function Wards() {
+  const { theme } = useTheme();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   
   const [wards, setWards] = useState<WardData[]>([]);
@@ -198,6 +201,26 @@ export default function Wards() {
     });
   };
 
+  const updateTileLayer = () => {
+    if (!mapInstance.current) return;
+    
+    if (tileLayerRef.current) {
+      tileLayerRef.current.remove();
+    }
+
+    const url = theme === 'dark' 
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" 
+      : "https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png";
+
+    tileLayerRef.current = L.tileLayer(url, {
+      attribution: '© CartoDB'
+    }).addTo(mapInstance.current);
+  };
+
+  useEffect(() => {
+    updateTileLayer();
+  }, [theme]);
+
   // Initialize Map
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
@@ -205,9 +228,7 @@ export default function Wards() {
         zoomControl: false
       }).setView([28.6139, 77.2090], 11);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(mapInstance.current);
+      updateTileLayer();
 
       L.control.zoom({ position: 'bottomleft' }).addTo(mapInstance.current);
 
@@ -238,16 +259,16 @@ export default function Wards() {
 
   return (
     <McdLayout>
-      <div className="relative flex flex-col h-full bg-slate-950 text-white font-inter">
+      <div className="relative flex flex-col h-full bg-[var(--bg-primary)] text-[var(--text-primary)] font-inter transition-colors duration-300">
         
         {/* Top Stats Bar */}
-        <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center justify-between bg-slate-900/90 backdrop-blur-md border border-slate-800/60 rounded-xl px-4 py-3 shadow-lg">
+        <div className="absolute top-4 left-4 right-4 z-[1000] flex items-center justify-between bg-[var(--bg-secondary)]/90 backdrop-blur-md border border-[var(--border)] rounded-xl px-4 py-3 shadow-lg">
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Total Wards</p>
+              <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider font-semibold">Total Wards</p>
               <h4 className="text-xl font-bold font-manrope">{stats.total}</h4>
             </div>
-            <div className="h-8 border-r border-slate-800"></div>
+            <div className="h-8 border-r border-[var(--border)]"></div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#00e400' }}></span>
@@ -269,7 +290,7 @@ export default function Wards() {
           </div>
           <button 
             onClick={fetchData} 
-            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700/50"
+            className="p-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] rounded-lg transition-colors border border-[var(--border)]"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
@@ -280,12 +301,12 @@ export default function Wards() {
 
         {/* Slide-In Panel */}
         {selectedWard && (
-          <div className="absolute top-0 right-0 h-full w-80 bg-slate-900/95 backdrop-blur-md border-l border-slate-800 z-[1000] shadow-2xl flex flex-col animate-slide-in">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-lg font-bold font-manrope">{selectedWard.ward_name}</h3>
+          <div className="absolute top-0 right-0 h-full w-80 bg-[var(--bg-secondary)]/95 backdrop-blur-md border-l border-[var(--border)] z-[1000] shadow-2xl flex flex-col animate-slide-in">
+            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
+              <h3 className="text-lg font-bold font-manrope text-[var(--text-primary)]">{selectedWard.ward_name}</h3>
               <button 
                 onClick={() => setSelectedWard(null)} 
-                className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-md transition-colors"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 hover:bg-[var(--bg-tertiary)] rounded-md transition-colors"
               >
                 ✕
               </button>
@@ -294,9 +315,9 @@ export default function Wards() {
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
               
               {/* Main AQI Display */}
-              <div className="bg-slate-800/50 border border-slate-700/30 p-4 rounded-xl flex items-center justify-between">
+              <div className="bg-[var(--bg-tertiary)]/50 border border-[var(--border)] p-4 rounded-xl flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-xs uppercase font-medium">Current AQI</p>
+                  <p className="text-[var(--text-muted)] text-xs uppercase font-medium">Current AQI</p>
                   <h1 className="text-4xl font-extrabold font-manrope mt-1" style={{ color: getAQIColor(selectedWard.aqi_value) }}>
                     {selectedWard.aqi_value}
                   </h1>
@@ -308,37 +329,37 @@ export default function Wards() {
 
               {/* Grid Stats */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-800/30 p-3 rounded-lg border border-slate-700/20">
-                  <span className="text-xs text-slate-400">PM2.5</span>
-                  <p className="text-sm font-semibold mt-0.5">{selectedWard.pm25.toFixed(1)} <span className="text-xs text-slate-500">µg/m³</span></p>
+                <div className="bg-[var(--bg-tertiary)]/30 p-3 rounded-lg border border-[var(--border)]">
+                  <span className="text-xs text-[var(--text-muted)]">PM2.5</span>
+                  <p className="text-sm font-semibold mt-0.5 text-[var(--text-primary)]">{selectedWard.pm25.toFixed(1)} <span className="text-xs text-[var(--text-muted)]">µg/m³</span></p>
                 </div>
-                <div className="bg-slate-800/30 p-3 rounded-lg border border-slate-700/20">
-                  <span className="text-xs text-slate-400">PM10</span>
-                  <p className="text-sm font-semibold mt-0.5">{selectedWard.pm10.toFixed(1)} <span className="text-xs text-slate-500">µg/m³</span></p>
+                <div className="bg-[var(--bg-tertiary)]/30 p-3 rounded-lg border border-[var(--border)]">
+                  <span className="text-xs text-[var(--text-muted)]">PM10</span>
+                  <p className="text-sm font-semibold mt-0.5 text-[var(--text-primary)]">{selectedWard.pm10.toFixed(1)} <span className="text-xs text-[var(--text-muted)]">µg/m³</span></p>
                 </div>
-                <div className="bg-slate-800/30 p-3 rounded-lg border border-slate-700/20">
-                  <span className="text-xs text-slate-400">NO2</span>
-                  <p className="text-sm font-semibold mt-0.5">{selectedWard.no2.toFixed(1)} <span className="text-xs text-slate-500">ppb</span></p>
+                <div className="bg-[var(--bg-tertiary)]/30 p-3 rounded-lg border border-[var(--border)]">
+                  <span className="text-xs text-[var(--text-muted)]">NO2</span>
+                  <p className="text-sm font-semibold mt-0.5 text-[var(--text-primary)]">{selectedWard.no2.toFixed(1)} <span className="text-xs text-[var(--text-muted)]">ppb</span></p>
                 </div>
-                <div className="bg-slate-800/30 p-3 rounded-lg border border-slate-700/20">
-                  <span className="text-xs text-slate-400">SO2</span>
-                  <p className="text-sm font-semibold mt-0.5">{selectedWard.so2.toFixed(1)} <span className="text-xs text-slate-500">ppb</span></p>
+                <div className="bg-[var(--bg-tertiary)]/30 p-3 rounded-lg border border-[var(--border)]">
+                  <span className="text-xs text-[var(--text-muted)]">SO2</span>
+                  <p className="text-sm font-semibold mt-0.5 text-[var(--text-primary)]">{selectedWard.so2.toFixed(1)} <span className="text-xs text-[var(--text-muted)]">ppb</span></p>
                 </div>
               </div>
 
               {/* 24h Trend Chart */}
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">24h History</p>
-                <div className="h-40 bg-slate-800/30 border border-slate-700/30 rounded-xl p-2">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-2">24h History</p>
+                <div className="h-40 bg-[var(--bg-tertiary)]/30 border border-[var(--border)] rounded-xl p-2">
                   {loadingHistory ? (
-                    <div className="flex items-center justify-center h-full text-slate-500 text-sm">Loading trend...</div>
+                    <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm">Loading trend...</div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={history}>
                         <XAxis dataKey="time" hide />
                         <Tooltip 
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
-                          labelStyle={{ color: '#94a3b8' }}
+                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                          labelStyle={{ color: 'var(--text-muted)' }}
                         />
                         <Line type="monotone" dataKey="aqi_value" stroke={getAQIColor(selectedWard.aqi_value)} strokeWidth={2} dot={false} />
                       </LineChart>
@@ -350,7 +371,7 @@ export default function Wards() {
               {/* 24h AI Forecast Chart */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">AI Forecast (24h)</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">AI Forecast (24h)</p>
                   {forecast.length > 1 && (
                     <span className={`text-xs px-1.5 py-0.5 rounded ${
                       forecast[forecast.length - 1].aqi > forecast[0].aqi ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'
@@ -359,15 +380,15 @@ export default function Wards() {
                     </span>
                   )}
                 </div>
-                <div className="h-40 bg-slate-800/20 border border-dotted border-slate-700/50 rounded-xl p-2">
+                <div className="h-40 bg-[var(--bg-tertiary)]/20 border border-dotted border-[var(--border)]/50 rounded-xl p-2">
                   {loadingForecast ? (
-                    <div className="flex items-center justify-center h-full text-slate-500 text-sm animate-pulse">Computing forecast...</div>
+                    <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm animate-pulse">Computing forecast...</div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={forecast}>
                         <XAxis dataKey="hour" hide />
                         <Tooltip 
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
+                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
                         />
                         <Area type="monotone" dataKey="aqi" stroke="#38bdf8" strokeDasharray="3 3" fill="url(#colorAqi)" strokeWidth={2} />
                         <defs>
@@ -383,10 +404,10 @@ export default function Wards() {
               </div>
 
               {/* Source & Actions */}
-              <div className="bg-slate-800/30 p-3 rounded-xl border border-slate-700/30 space-y-2">
+              <div className="bg-[var(--bg-tertiary)]/30 p-3 rounded-xl border border-[var(--border)] space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle size={16} className="text-amber-400" />
-                  <span className="text-xs font-semibold text-slate-300">Pollution Source:</span>
+                  <span className="text-xs font-semibold text-[var(--text-secondary)]">Pollution Source:</span>
                   {sourceDetection ? (
                     <div className="flex items-center gap-1">
                       <span className={`text-xs px-2 py-0.5 rounded-md border font-medium ${
@@ -402,11 +423,11 @@ export default function Wards() {
                       )}
                     </div>
                   ) : (
-                    <span className="text-xs text-slate-500 italic">No active source detected</span>
+                    <span className="text-xs text-[var(--text-muted)] italic">No active source detected</span>
                   )}
                 </div>
                 {sourceDetection && (
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-[10px] text-[var(--text-muted)]">
                     Confidence: {(sourceDetection.confidence_score * 100).toFixed(0)}% • {new Date(sourceDetection.detected_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                   </p>
                 )}

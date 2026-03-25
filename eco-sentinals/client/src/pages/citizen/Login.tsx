@@ -40,15 +40,15 @@ export default function CitizenLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f0c] flex items-center justify-center p-6 text-white">
-      <div className="bg-[#111814] border border-[#1e2922] rounded-2xl p-8 max-w-sm w-full text-center">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6 text-[var(--text-primary)] transition-colors duration-300">
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-8 max-w-sm w-full text-center">
         <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 rounded-xl bg-[#1a5c3a] flex items-center justify-center text-[#3ecf8e] text-xl font-bold">
+          <div className="w-12 h-12 rounded-xl bg-[var(--citizen-primary)] flex items-center justify-center text-[var(--accent-fg)] text-xl font-bold">
             🌱
           </div>
         </div>
-        <h1 className="text-xl font-bold mb-2 text-[#3ecf8e]">Citizen Node</h1>
-        <p className="text-slate-400 text-sm mb-6">
+        <h1 className="text-xl font-bold mb-2 text-[var(--citizen-primary)]">Citizen Node</h1>
+        <p className="text-[var(--text-muted)] text-sm mb-6">
           Access local AQI updates and waste management metrics.
         </p>
 
@@ -61,14 +61,14 @@ export default function CitizenLogin() {
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full py-3 bg-white hover:bg-slate-100 disabled:opacity-50 text-slate-900 font-semibold rounded-xl flex items-center justify-center space-x-2 transition-colors mb-3"
+              className="w-full py-3 bg-[var(--bg-secondary)] hover:opacity-90 disabled:opacity-50 text-[var(--text-primary)] font-semibold rounded-xl flex items-center justify-center space-x-2 border border-[var(--border)] transition-all mb-3"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <span>G</span>}
               <span>{loading ? 'Connecting...' : 'Continue with Google'}</span>
             </button>
             <button
               onClick={() => setShowEmail(true)}
-              className="w-full py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="w-full py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
             >
               Or sign in with email
             </button>
@@ -80,7 +80,7 @@ export default function CitizenLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="citizen@gmail.com"
-              className="w-full bg-[#0a0f0c] border border-[#1e2922] rounded-xl p-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--accent)]"
               required
             />
             <input
@@ -88,18 +88,18 @@ export default function CitizenLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-[#0a0f0c] border border-[#1e2922] rounded-xl p-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl p-3 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--accent)]"
               required
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-black font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--accent-fg)] font-bold rounded-xl flex items-center justify-center gap-2 transition-all"
             >
               {loading && <Loader2 size={14} className="animate-spin" />}
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
-            <button type="button" onClick={() => setShowEmail(false)} className="w-full text-xs text-slate-500 hover:text-slate-300">
+            <button type="button" onClick={() => setShowEmail(false)} className="w-full text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)]">
               Back to Google login
             </button>
           </form>

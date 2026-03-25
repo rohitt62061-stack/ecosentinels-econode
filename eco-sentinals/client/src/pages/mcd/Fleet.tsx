@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTheme } from '../../context/ThemeContext';
 
 interface BinReading {
   id: string;
@@ -26,6 +27,7 @@ interface SummaryStats {
 }
 
 export default function Fleet() {
+  const { theme } = useTheme();
   const [bins, setBins] = useState<BinReading[]>([]);
   const [filteredBins, setFilteredBins] = useState<BinReading[]>([]);
   const [wards, setWards] = useState<Record<string, string>>({});
@@ -42,13 +44,20 @@ export default function Fleet() {
   const [optimizing, setOptimizing] = useState(false);
   const [routes, setRoutes] = useState<any[]>([]);
 
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const optimizeRoutes = async () => {
     try {
       setOptimizing(true);
       const fullyBins = bins.filter(b => (selectedWard === 'all' || b.ward_id === selectedWard) && b.fill_level_pct > 70);
 
       if (fullyBins.length < 3) {
-        alert("No collection needed today — all bins under 70%");
+        showToast('No collection needed today — all bins under 70%', 'info');
         return;
       }
 
@@ -95,9 +104,9 @@ export default function Fleet() {
         }))
       );
       if (error) throw error;
-      alert("Routes saved to manifest securely");
+      showToast('Routes saved to manifest securely', 'success');
     } catch (err: any) {
-       alert("Failed saving: " + err.message);
+       showToast('Failed saving: ' + err.message, 'error');
     }
   };
 
@@ -197,31 +206,44 @@ export default function Fleet() {
 
   return (
     <McdLayout>
-      <div className="p-6 bg-slate-950 min-h-full text-slate-100 flex flex-col gap-6 overflow-y-auto">
-        <div className="border-b border-slate-900 pb-4">
+      <div className="p-6 bg-[var(--bg-primary)] min-h-full text-[var(--text-primary)] flex flex-col gap-6 overflow-y-auto transition-colors duration-300">
+        
+        {/* Toast notification */}
+        {toast && (
+          <div className={`fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-xl shadow-2xl border text-sm font-semibold flex items-center gap-2 animate-slideIn transition-all ${
+            toast.type === 'success' ? 'bg-emerald-950 border-emerald-500/40 text-emerald-400' :
+            toast.type === 'error'   ? 'bg-rose-950 border-rose-500/40 text-rose-400' :
+                                       'bg-[var(--bg-secondary)] border-[var(--border)] text-[var(--text-secondary)]'
+          }`}>
+            {toast.type === 'success' ? '✓' : toast.type === 'error' ? '✕' : 'ℹ'} {toast.message}
+          </div>
+        )}
+        
+        <div className="border-b border-[var(--border)] pb-4">
           <h1 className="text-2xl font-black font-manrope tracking-tight">Fleet Management</h1>
-          <p className="text-sm text-slate-400">Smart bin grid monitoring and sensor fleets diagnostics overviews frameworks setups layouts.</p>
+          <p className="text-sm text-[var(--text-secondary)]">Smart bin grid monitoring and sensor fleets diagnostics overviews.</p>
         </div>
+
 
         {/* Stats bar */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-slate-900/50 border border-slate-900 px-6 py-4 rounded-xl flex items-center justify-between">
+          <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] px-6 py-4 rounded-xl flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Bins</span>
-              <h2 className="text-3xl font-black text-white mt-1">{stats.total}</h2>
+              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Total Bins</span>
+              <h2 className="text-3xl font-black text-[var(--text-primary)] mt-1">{stats.total}</h2>
             </div>
-            <Trash2 className="text-slate-700" size={32} />
+            <Trash2 className="text-[var(--text-muted)]" size={32} />
           </div>
-          <div className="bg-slate-900/50 border border-slate-900 px-6 py-4 rounded-xl flex items-center justify-between">
+          <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] px-6 py-4 rounded-xl flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Needs Collection</span>
+              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Needs Collection</span>
               <h2 className="text-3xl font-black text-rose-500 mt-1">{stats.needsCollection}</h2>
             </div>
             <AlertCircle className="text-rose-500/50" size={32} />
           </div>
-          <div className="bg-slate-900/50 border border-slate-900 px-6 py-4 rounded-xl flex items-center justify-between">
+          <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] px-6 py-4 rounded-xl flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Average Fill</span>
+              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Average Fill</span>
               <h2 className="text-3xl font-black text-emerald-400 mt-1">{stats.avgFill}%</h2>
             </div>
             <CheckCircle className="text-emerald-500/50" size={32} />
@@ -229,10 +251,10 @@ export default function Fleet() {
         </div>
 
         {/* Filters bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/40 border border-slate-900 p-4 rounded-xl">
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-[var(--bg-secondary)]/40 border border-[var(--border)] p-4 rounded-xl">
           <div className="flex items-center gap-2">
-            <Filter size={16} className="text-slate-400" />
-            <span className="text-sm font-bold text-slate-400">Filters:</span>
+            <Filter size={16} className="text-[var(--text-secondary)]" />
+            <span className="text-sm font-bold text-[var(--text-secondary)]">Filters:</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -240,7 +262,7 @@ export default function Fleet() {
             <select 
               value={selectedWard}
               onChange={(e) => setSelectedWard(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-200 outline-none focus:border-emerald-500"
+              className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--text-primary)] outline-none focus:border-emerald-500"
             >
               <option value="all">All Wards</option>
               {Object.entries(wards).map(([id, name]) => (
@@ -249,12 +271,12 @@ export default function Fleet() {
             </select>
 
             {/* Waste Type filters */}
-            <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <div className="flex bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-0.5">
               {['all', 'biodegradable', 'recyclable', 'hazardous'].map(t => (
                 <button 
                   key={t}
                   onClick={() => setSelectedWasteType(t)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors capitalize ${selectedWasteType === t ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors capitalize ${selectedWasteType === t ? 'bg-emerald-500 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
                   {t}
                 </button>
@@ -265,36 +287,36 @@ export default function Fleet() {
 
         {/* Bins Grid */}
         {loading ? (
-          <div className="flex-1 flex items-center justify-center text-slate-400">
+          <div className="flex-1 flex items-center justify-center text-[var(--text-muted)]">
             <RefreshCw size={24} className="animate-spin mr-2" />
             Loading bins...
           </div>
         ) : filteredBins.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
             {filteredBins.map(b => (
-              <div key={b.bin_id} className="bg-slate-900/50 border border-slate-900 p-4 rounded-xl flex flex-col gap-3 relative hover:border-slate-800 transition-colors">
+              <div key={b.bin_id} className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] p-4 rounded-xl flex flex-col gap-3 relative hover:border-[var(--border-strong)] transition-colors">
                 
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                  <span className="font-black text-sm text-slate-200">{b.bin_id}</span>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                  <span className="font-black text-sm text-[var(--text-primary)]">{b.bin_id}</span>
+                  <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]">
                     <Battery size={14} className={b.battery_level < 20 ? "text-rose-500 animate-pulse" : "text-emerald-500"} />
                     <span>{Math.round(b.battery_level)}%</span>
                   </div>
                 </div>
 
                 {/* Subtitle */}
-                <div className="text-[11px] text-slate-500">
+                <div className="text-[11px] text-[var(--text-muted)]">
                   {wards[b.ward_id] || 'Ward ...'}
                 </div>
 
                 {/* Fill Level visualization */}
                 <div className="flex flex-col gap-1 mt-2">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-slate-400">Fill Level</span>
-                    <span className="font-black text-slate-200">{Math.round(b.fill_level_pct)}%</span>
+                    <span className="font-bold text-[var(--text-secondary)]">Fill Level</span>
+                    <span className="font-black text-[var(--text-primary)]">{Math.round(b.fill_level_pct)}%</span>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-950 rounded-full border border-slate-900 overflow-hidden">
+                  <div className="w-full h-2.5 bg-[var(--bg-primary)] rounded-full border border-[var(--border)] overflow-hidden">
                     <div 
                       className={`h-full ${getFillColor(b.fill_level_pct)} transition-all`} 
                       style={{ width: `${Math.min(100, Math.max(0, b.fill_level_pct))}%` }}
@@ -318,24 +340,24 @@ export default function Fleet() {
             ))}
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-600 italic">
-            No bins found matching filters setups layouts framing.
+          <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] italic">
+            No bins found matching filters.
           </div>
         )}
 
         {/* Route Optimizer Panel */}
-        <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex flex-col gap-4">
+        <div className="bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-black text-slate-200 uppercase tracking-wide">Route Optimizer</h3>
-              <p className="text-[11px] text-slate-500">Autonomous collection tracking utilizing OSRM APIs</p>
+              <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wide">Route Optimizer</h3>
+              <p className="text-[11px] text-[var(--text-muted)]">Autonomous collection tracking utilizing OSRM APIs</p>
             </div>
             <button 
               onClick={optimizeRoutes}
               disabled={optimizing || selectedWard === 'all'}
               className={`px-4 py-2 rounded-xl border text-xs font-black transition-all ${
                 selectedWard === 'all' 
-                  ? 'bg-slate-950 border-slate-900 text-slate-700 cursor-not-allowed' 
+                  ? 'bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-muted)] cursor-not-allowed' 
                   : 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500/20 shadow-lg shadow-emerald-500/10'
               }`}
             >
@@ -347,42 +369,42 @@ export default function Fleet() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
                 {routes.map(r => (
-                  <div key={r.truckId} className="bg-slate-950/60 border border-slate-900 p-3 rounded-xl flex flex-col gap-1.5 relative overflow-hiddenGroup">
+                  <div key={r.truckId} className="bg-[var(--bg-primary)]/60 border border-[var(--border)] p-3 rounded-xl flex flex-col gap-1.5 relative overflow-hiddenGroup">
                      <div className="flex items-center justify-between">
                        <span className={`text-[11px] font-black uppercase tracking-wide ${r.truckId === 1 ? 'text-blue-400' : r.truckId === 2 ? 'text-purple-400' : 'text-amber-400'}`}>
                          Truck #{r.truckId}
                        </span>
-                       <span className="text-[10px] text-slate-500">{r.binsCount} full bins</span>
+                       <span className="text-[10px] text-[var(--text-muted)]">{r.binsCount} full bins</span>
                      </div>
                      <div className="grid grid-cols-2 gap-2 text-xs">
                        <div className="flex flex-col">
-                         <span className="text-[10px] text-slate-500">Distance</span>
-                         <span className="font-bold text-slate-200">{r.distance.toFixed(1)} km</span>
+                         <span className="text-[10px] text-[var(--text-muted)]">Distance</span>
+                         <span className="font-bold text-[var(--text-primary)]">{r.distance.toFixed(1)} km</span>
                        </div>
                        <div className="flex flex-col">
-                         <span className="text-[10px] text-slate-500">Duration</span>
-                         <span className="font-bold text-slate-200">{Math.round(r.duration)} mins</span>
+                         <span className="text-[10px] text-[var(--text-muted)]">Duration</span>
+                         <span className="font-bold text-[var(--text-primary)]">{Math.round(r.duration)} mins</span>
                        </div>
                      </div>
                      <div className="mt-1 text-[10px] text-emerald-400 font-bold">
-                       Emission Saved: <span className="text-slate-200">{Math.max(0, (60 - r.distance) * 0.21).toFixed(1)} kg CO₂</span>
+                       Emission Saved: <span className="text-[var(--text-primary)]">{Math.max(0, (60 - r.distance) * 0.21).toFixed(1)} kg CO₂</span>
                      </div>
                   </div>
                 ))}
                 
                 <button 
                   onClick={saveRoutes}
-                  className="w-full py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors mt-1"
+                  className="w-full py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors mt-1"
                 >
                   Save Route Manifest
                 </button>
               </div>
 
               {/* Small Map Container */}
-              <div className="h-48 md:h-auto bg-slate-950 rounded-xl border border-slate-900 overflow-hidden relative z-10">
+              <div className="h-48 md:h-auto bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] overflow-hidden relative z-10">
                 {/* @ts-ignore */}
                 <MapContainer center={[28.6139, 77.2090] as [number, number]} zoom={12} className="w-full h-full">
-                   <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                   <TileLayer url={theme === 'dark' ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" : "https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png"} />
                    {routes.map(r => (
                       /* @ts-ignore */
                       <Polyline 

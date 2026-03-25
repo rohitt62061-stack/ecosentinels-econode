@@ -73,7 +73,11 @@ export default function Home() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      if (!session?.user?.id) return;
+      if (!session?.user?.id) {
+        setLoading(false);
+        return;
+      }
+
 
       // 1. Fetch Profile for ward_id
       const { data: profile, error: pError } = await supabase
@@ -154,38 +158,38 @@ export default function Home() {
   if (loading && !aqi) {
     return (
       <CitizenLayout>
-        <div className="max-width-mobile mx-auto h-full flex flex-col bg-slate-950 px-4 pt-4 gap-6 overflow-hidden">
+        <div className="max-width-mobile mx-auto h-full flex flex-col bg-[var(--bg-primary)] px-4 pt-4 gap-6 overflow-hidden">
            {/* Header Shimmer */}
            <div className="flex items-center justify-between">
               <div className="space-y-2">
-                 <div className="w-24 h-3 bg-slate-800 rounded animate-shimmer" />
-                 <div className="w-32 h-5 bg-slate-800 rounded animate-shimmer" />
+                 <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+                 <div className="w-32 h-5 bg-[var(--bg-tertiary)] rounded animate-pulse" />
               </div>
-              <div className="w-16 h-6 bg-slate-800 rounded animate-shimmer" />
+              <div className="w-16 h-6 bg-[var(--bg-tertiary)] rounded animate-pulse" />
            </div>
 
            {/* Gauge Shimmer */}
            <div className="flex justify-center py-6">
-              <div className="w-60 h-60 rounded-full border-8 border-slate-900 animate-shimmer flex flex-col items-center justify-center">
-                 <div className="w-12 h-3 bg-slate-800 rounded mb-2" />
-                 <div className="w-20 h-12 bg-slate-800 rounded mb-2" />
-                 <div className="w-16 h-5 bg-slate-800 rounded" />
+              <div className="w-60 h-60 rounded-full border-8 border-[var(--bg-secondary)] animate-pulse flex flex-col items-center justify-center">
+                 <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded mb-2" />
+                 <div className="w-20 h-12 bg-[var(--bg-tertiary)] rounded mb-2" />
+                 <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded" />
               </div>
            </div>
 
            {/* Advisory Shimmer */}
-           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 h-24 animate-shimmer flex flex-col gap-2">
-              <div className="w-24 h-3 bg-slate-800 rounded" />
-              <div className="w-full h-3 bg-slate-800 rounded" />
-              <div className="w-3/4 h-3 bg-slate-800 rounded" />
+           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 h-24 animate-pulse flex flex-col gap-2">
+              <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded" />
+              <div className="w-full h-3 bg-[var(--bg-tertiary)] rounded" />
+              <div className="w-3/4 h-3 bg-[var(--bg-tertiary)] rounded" />
            </div>
 
            {/* Grid Shimmer */}
            <div className="grid grid-cols-2 gap-3">
               {[1,2,3,4].map(i => (
-                 <div key={i} className="bg-slate-900 border border-slate-800 p-4 rounded-xl h-20 animate-shimmer flex flex-col gap-2">
-                    <div className="w-12 h-3 bg-slate-800 rounded" />
-                    <div className="w-16 h-5 bg-slate-800 rounded" />
+                 <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] p-4 rounded-xl h-20 animate-pulse flex flex-col gap-2">
+                    <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded" />
+                    <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded" />
                  </div>
               ))}
            </div>
@@ -197,18 +201,18 @@ export default function Home() {
   if (!aqi) {
     return (
       <CitizenLayout>
-        <div className="flex flex-col items-center justify-center h-full text-slate-400 text-center px-6 gap-4">
+        <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] text-center px-6 gap-4 bg-[var(--bg-primary)]">
           <AlertTriangle size={48} className="text-amber-500" />
           <div>
-             <p className="font-bold text-white">Data Unavailable</p>
-             <p className="text-xs text-slate-500">Failed to fetch local AQI metrics.</p>
+             <p className="font-bold text-[var(--text-primary)]">Data Unavailable</p>
+             <p className="text-xs text-[var(--text-muted)]">Failed to fetch local AQI metrics.</p>
           </div>
           <button 
             onClick={() => {
                setLoading(true);
                fetchData();
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-all"
           >
              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
              Tap to Retry
@@ -223,17 +227,17 @@ export default function Home() {
 
   return (
     <CitizenLayout>
-      <div className="max-width-mobile mx-auto h-full flex flex-col bg-slate-950 text-white font-inter overflow-y-auto pb-20">
+      <div className="max-width-mobile mx-auto h-full flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)] font-inter overflow-y-auto pb-20 transition-colors duration-300">
         
         {/* Header */}
-        <div className="p-4 flex items-center justify-between border-b border-slate-900">
+        <div className="p-4 flex items-center justify-between border-b border-[var(--border)]">
           <div>
-            <p className="text-xs text-slate-400">Current Area</p>
+            <p className="text-xs text-[var(--text-muted)]">Current Area</p>
             <h3 className="font-bold text-lg font-manrope flex items-center gap-1">
               📍 {aqi.ward_name}, Delhi
             </h3>
           </div>
-          <div className="flex items-center gap-1 text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-1 rounded-md">
             <Clock size={12} />
             <span>{minutesAgo === 0 ? 'Just updated' : `${minutesAgo} min ago`}</span>
           </div>
@@ -247,7 +251,7 @@ export default function Home() {
               cx="128"
               cy="128"
               r="120"
-              stroke="#1e293b"
+              stroke="var(--bg-tertiary)"
               strokeWidth="12"
               fill="transparent"
             />
@@ -267,7 +271,7 @@ export default function Home() {
           </svg>
           {/* Inner Text overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center transform rotate-0 mt-3">
-            <span className="text-xs uppercase text-slate-400 font-semibold tracking-wider">AQI</span>
+            <span className="text-xs uppercase text-[var(--text-muted)] font-semibold tracking-wider">AQI</span>
             <h1 className="text-6xl font-black font-manrope tracking-tighter" style={{ color }}>
               {aqi.aqi_value}
             </h1>
@@ -279,8 +283,8 @@ export default function Home() {
 
         {/* Advisory Card */}
         <div className="px-4 mb-5">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4" style={{ borderLeft: `4px solid ${color}` }}>
-            <h4 className="font-bold text-sm mb-2 flex items-center gap-1.5 text-slate-200">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4" style={{ borderLeft: `4px solid ${color}` }}>
+            <h4 className="font-bold text-sm mb-2 flex items-center gap-1.5 text-[var(--text-primary)]">
               <ShieldCheck size={16} style={{ color }} /> Today's Advisory
             </h4>
             <ul className="space-y-2">
@@ -294,14 +298,14 @@ export default function Home() {
                     tips = [advice.suggestion_text];
                   }
                   return tips.map((tip: string, index: number) => (
-                    <li key={`${advice.id}-${index}`} className="text-xs text-slate-400 flex items-start gap-1.5">
-                      <div className="w-1 h-1 rounded-full bg-slate-600 mt-1.5"></div>
+                    <li key={`${advice.id}-${index}`} className="text-xs text-[var(--text-muted)] flex items-start gap-1.5">
+                      <div className="w-1 h-1 rounded-full bg-[var(--border)] mt-1.5"></div>
                       <span>{tip}</span>
                     </li>
                   ));
                 })
               ) : (
-                <li className="text-xs text-slate-500 italic">Generating smart advisory recommendations...</li>
+                <li className="text-xs text-[var(--text-muted)] italic opacity-60">Generating smart advisory recommendations...</li>
               )}
             </ul>
           </div>
@@ -309,33 +313,33 @@ export default function Home() {
 
         {/* Quick Stats Grid 2x2 */}
         <div className="px-4 grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-            <div className="flex items-center gap-1 text-slate-400 mb-1">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl">
+            <div className="flex items-center gap-1 text-[var(--text-muted)] mb-1">
               <Activity size={14} />
               <span className="text-xs">PM 2.5</span>
             </div>
             <p className="text-lg font-bold">
-              {aqi.pm25.toFixed(1)} <span className="text-xs text-slate-500 font-normal">µg/m³</span>
+              {aqi.pm25.toFixed(1)} <span className="text-xs text-[var(--text-muted)] font-normal">µg/m³</span>
             </p>
           </div>
-          <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-            <div className="flex items-center gap-1 text-slate-400 mb-1">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl">
+            <div className="flex items-center gap-1 text-[var(--text-muted)] mb-1">
               <Activity size={14} fill="transparent" />
               <span className="text-xs">PM 10</span>
             </div>
             <p className="text-lg font-bold">
-              {aqi.pm10.toFixed(1)} <span className="text-xs text-slate-500 font-normal">µg/m³</span>
+              {aqi.pm10.toFixed(1)} <span className="text-xs text-[var(--text-muted)] font-normal">µg/m³</span>
             </p>
           </div>
-          <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col justify-center">
-            <span className="text-xs text-slate-400 mb-1">Ward Rank</span>
-            <p className="text-lg font-bold text-slate-600 text-center">-</p>
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl flex flex-col justify-center">
+            <span className="text-xs text-[var(--text-muted)] mb-1">Ward Rank</span>
+            <p className="text-lg font-bold text-[var(--text-muted)] opacity-30 text-center">-</p>
           </div>
-          <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-col justify-center">
-            <span className="text-xs text-slate-400 mb-1">Eco Score</span>
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl flex flex-col justify-center">
+            <span className="text-xs text-[var(--text-muted)] mb-1">Eco Score</span>
             <div className="flex items-center gap-1 justify-center">
               <Heart size={16} className="text-rose-500 fill-rose-500" />
-              <span className="font-bold">--</span>
+              <span className="font-bold text-[var(--text-muted)] opacity-30">--</span>
             </div>
           </div>
         </div>
@@ -345,12 +349,12 @@ export default function Home() {
         {/* Onboarding Swipeable Modal overlay */}
         {showOnboarding && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[2000] flex items-center justify-center p-6 animate-fadeIn">
-             <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm p-6 flex flex-col items-center text-center gap-4 relative shadow-2xl shadow-emerald-500/10">
+             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-3xl w-full max-w-sm p-6 flex flex-col items-center text-center gap-4 relative shadow-2xl">
                 
                 {/* Skip button */}
                 <button 
                   onClick={handleFinishOnboard}
-                  className="absolute top-4 right-4 text-xs font-bold text-slate-500 hover:text-slate-300"
+                  className="absolute top-4 right-4 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 >
                   Skip
                 </button>
@@ -363,8 +367,8 @@ export default function Home() {
                          <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400">
                             <Activity size={32} />
                          </div>
-                         <h3 className="text-xl font-black font-manrope text-white">See Your Ward's Air Quality</h3>
-                         <p className="text-xs text-slate-400 px-4">Get hyper-local real-time AQI updates and AI health advisories specifically for your local street node.</p>
+                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">See Your Ward's Air Quality</h3>
+                         <p className="text-xs text-[var(--text-muted)] px-4">Get hyper-local real-time AQI updates and AI health advisories specifically for your local street node.</p>
                       </div>
                    )}
 
@@ -373,8 +377,8 @@ export default function Home() {
                          <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400">
                             <Camera size={32} />
                          </div>
-                         <h3 className="text-xl font-black font-manrope text-white">Scan Waste, Earn Rewards</h3>
-                         <p className="text-xs text-slate-400 px-4">Snap pictures of waste nodes to classify them accurately. Earn Eco Credits for your environmental stewardship dashboards datasets.</p>
+                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">Scan Waste, Earn Rewards</h3>
+                         <p className="text-xs text-[var(--text-muted)] px-4">Snap pictures of waste nodes to classify them accurately. Earn Eco Credits for your environmental stewardship.</p>
                       </div>
                    )}
 
@@ -383,8 +387,8 @@ export default function Home() {
                          <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-400">
                             <Heart size={32} className="fill-amber-500" />
                          </div>
-                         <h3 className="text-xl font-black font-manrope text-white">Help Your Community</h3>
-                         <p className="text-xs text-slate-400 px-4">Climb your local ward leaderboard. Higher precision yields better environment benchmarks for your family node layouts.</p>
+                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">Help Your Community</h3>
+                         <p className="text-xs text-[var(--text-muted)] px-4">Climb your local ward leaderboard. Higher precision yields better environment benchmarks for your family.</p>
                       </div>
                    )}
 

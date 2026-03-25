@@ -79,34 +79,33 @@ export default function Waste() {
 
   return (
     <CitizenLayout>
-      <div className="p-4 bg-[#0a0f0c] min-h-full text-slate-100 flex flex-col gap-4 max-w-md mx-auto relative">
+      <div className="p-4 bg-[var(--bg-primary)] min-h-full text-[var(--text-primary)] flex flex-col gap-4 max-w-md mx-auto relative transition-colors duration-300">
         
         <div>
           <h1 className="text-xl font-bold font-manrope">Waste Classifier</h1>
-          <p className="text-xs text-emerald-400/80">Snapshot the item or type its name for points</p>
+          <p className="text-xs text-[var(--citizen-primary)] opacity-80">Snapshot the item or type its name for points</p>
         </div>
 
-        {/* Camera Area */}
         {!result && !loading && (
           <div className="flex flex-col gap-3">
-            <label className="border-2 border-dashed border-emerald-900/40 rounded-2xl h-52 flex flex-col items-center justify-center gap-2 cursor-pointer bg-emerald-950/20 hover:border-emerald-500/40 transition-colors relative overflow-hiddenGroup">
+            <label className="border-2 border-dashed border-[var(--border)] rounded-2xl h-52 flex flex-col items-center justify-center gap-2 cursor-pointer bg-[var(--bg-secondary)]/20 hover:border-[var(--citizen-primary)]/40 transition-colors relative overflow-hidden group">
               <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
               {image ? (
                 <img src={image} className="absolute inset-0 w-full h-full object-cover rounded-xl" alt="Preview" />
               ) : (
                 <>
-                  <div className="p-3 bg-emerald-800/20 rounded-full text-emerald-400">
+                  <div className="p-3 bg-[var(--citizen-primary)]/10 rounded-full text-[var(--citizen-primary)]">
                     <Camera size={24} />
                   </div>
-                  <span className="text-xs font-semibold text-slate-400">Tap to Scan Item</span>
+                  <span className="text-xs font-semibold text-[var(--text-muted)]">Tap to Scan Item</span>
                 </>
               )}
             </label>
 
-            <div className="flex items-center gap-2 text-slate-600 text-[10px] uppercase font-bold">
-              <hr className="flex-1 border-slate-900" />
+            <div className="flex items-center gap-2 text-[var(--text-muted)] opacity-30 text-[10px] uppercase font-bold">
+              <hr className="flex-1 border-[var(--border)]" />
               <span>OR</span>
-              <hr className="flex-1 border-slate-900" />
+              <hr className="flex-1 border-[var(--border)]" />
             </div>
 
             <input 
@@ -114,7 +113,7 @@ export default function Waste() {
               placeholder="Type item name (e.g. Banana Peel)" 
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
-              className="bg-slate-900/80 border border-slate-900 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-500/50 text-slate-100"
+              className="bg-[var(--bg-secondary)]/80 border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[var(--citizen-primary)]/50 text-[var(--text-primary)] placeholder-[var(--text-muted)]/50"
             />
 
             <button 
@@ -134,28 +133,28 @@ export default function Waste() {
         {/* Loading State */}
         {loading && (
           <div className="flex-1 flex flex-col items-center justify-center gap-3">
-            <RefreshCw size={32} className="animate-spin text-emerald-400" />
-            <p className="text-sm font-bold text-slate-300 animate-pulse">Asking AI Classification...</p>
+            <RefreshCw size={32} className="animate-spin text-[var(--citizen-primary)]" />
+            <p className="text-sm font-bold text-[var(--text-secondary)] animate-pulse">Asking AI Classification...</p>
           </div>
         )}
 
         {/* Result Card */}
         {result && theme && (
           <div className="flex flex-col gap-4 animate-fadeIn">
-            <div className={`border rounded-2xl p-5 flex flex-col items-center text-center gap-3 bg-slate-900/30 ${theme.bg}`}>
+            <div className={`border rounded-2xl p-5 flex flex-col items-center text-center gap-3 bg-[var(--bg-secondary)]/30 ${theme.bg}`}>
               <span className="text-5xl">{theme.emoji}</span>
               <div>
-                <h3 className="font-black text-white text-lg capitalize">{result.item_name || itemName}</h3>
+                <h3 className="font-black text-[var(--text-primary)] text-lg capitalize">{result.item_name || itemName}</h3>
                 <span className={`px-2 py-0.5 text-xs font-bold rounded-md uppercase border inline-block mt-1 ${theme.text} border-current/20`}>
                   {theme.label}
                 </span>
               </div>
               
-              <div className="w-full h-[1px] bg-slate-800/50" />
+              <div className="w-full h-[1px] bg-[var(--border)]" />
 
               <div className="text-left w-full">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Disposal Tip</p>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">{result.disposal_tip}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Disposal Tip</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">{result.disposal_tip}</p>
               </div>
 
               {showPoints && (
@@ -168,7 +167,7 @@ export default function Waste() {
 
             <button 
               onClick={reset}
-              className="w-full py-2.5 bg-slate-900 border border-slate-800 text-slate-300 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors"
+              className="w-full py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl text-sm font-semibold hover:bg-[var(--bg-tertiary)] transition-colors"
             >
               Scan Another Item
             </button>
@@ -181,7 +180,7 @@ export default function Waste() {
             <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
             <div>
               <p className="text-xs font-bold text-red-500">Classification Error</p>
-              <p className="text-xs text-slate-400 mt-0.5">{error}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">{error}</p>
             </div>
           </div>
         )}

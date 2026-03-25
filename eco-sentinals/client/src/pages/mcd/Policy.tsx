@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import McdLayout from '../../components/McdLayout';
 import { supabase } from '../../utils/supabase';
-import { Shield, CheckCircle, XCircle, ArrowRight, Filter, RefreshCw, AlertTriangle, User } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, ArrowRight, RefreshCw, AlertTriangle, User } from 'lucide-react';
 
 interface ActionItem {
   action: string;
@@ -110,32 +110,32 @@ export default function Policy() {
 
   return (
     <McdLayout>
-      <div className="p-6 bg-slate-950 min-h-full text-slate-100 flex flex-col gap-6 overflow-y-auto">
+      <div className="p-6 bg-[var(--bg-primary)] min-h-full text-[var(--text-primary)] flex flex-col gap-6 overflow-y-auto transition-colors duration-300">
         
         {/* Header and top controls */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-900 pb-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
           <div>
             <h1 className="text-2xl font-black font-manrope tracking-tight">Policy Recommendations</h1>
-            <p className="text-sm text-slate-400">Automated AI policy generation for detected pollution sources</p>
+            <p className="text-sm text-[var(--text-secondary)]">Automated AI policy generation for detected pollution sources</p>
           </div>
 
           <div className="flex items-center gap-3">
             <select 
               value={selectedWard} 
               onChange={(e) => setSelectedWard(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-200"
+              className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm font-medium text-[var(--text-primary)]"
             >
               <option value="all">All Wards</option>
               {wards.map(w => <option key={w.id} value={w.id}>{w.ward_name}</option>)}
             </select>
-            <button onClick={fetchPolicies} className="p-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white">
+            <button onClick={fetchPolicies} className="p-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
         </div>
 
         {/* Status Tabs */}
-        <div className="flex border-b border-slate-900">
+        <div className="flex border-b border-[var(--border)]">
           {(['all', 'pending', 'approved', 'implemented', 'rejected'] as const).map(tab => (
             <button
               key={tab}
@@ -143,7 +143,7 @@ export default function Policy() {
               className={`px-4 py-2 text-sm font-semibold capitalize border-b-2 transition-colors -mb-[2px] ${
                 selectedStatus === tab 
                   ? 'border-emerald-500 text-emerald-500' 
-                  : 'border-transparent text-slate-500 hover:text-slate-300'
+                  : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }`}
             >
               {tab}
@@ -153,7 +153,7 @@ export default function Policy() {
 
         {/* Policy Grid */}
         {loading && recommendations.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-slate-500 animate-pulse">
+          <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] animate-pulse">
             Loading policies...
           </div>
         ) : recommendations.length === 0 ? (
@@ -163,14 +163,14 @@ export default function Policy() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {recommendations.map(policy => (
-              <div key={policy.id} className="bg-slate-900/50 border border-slate-900 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/0 via-slate-900/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div key={policy.id} className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--bg-secondary)]/0 via-[var(--bg-secondary)]/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                 {/* Card Header */}
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-bold text-slate-200">{policy.wards?.ward_name}</h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
+                    <h3 className="font-bold text-[var(--text-primary)]">{policy.wards?.ward_name}</h3>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
                       {new Date(policy.generated_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     </p>
                   </div>
@@ -181,37 +181,37 @@ export default function Policy() {
 
                 {/* Source trigger indication */}
                 {policy.pollution_detections && (
-                  <div className="flex items-center gap-1.5 bg-slate-950/80 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-1.5 bg-[var(--bg-primary)]/80 px-2.5 py-1.5 rounded-lg border border-[var(--border)]">
                     <AlertTriangle size={14} className="text-amber-500" />
-                    <span className="text-xs font-semibold text-slate-300 capitalize">{policy.pollution_detections.source_type.replace('_', ' ')}</span>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-xs font-semibold text-[var(--text-secondary)] capitalize">{policy.pollution_detections.source_type.replace('_', ' ')}</span>
+                    <span className="text-[10px] text-[var(--text-muted)]">
                       ({Math.round(policy.pollution_detections.confidence_score * 100)}% conf)
                     </span>
                   </div>
                 )}
 
                 {/* Escalation Target */}
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)]">
                   <User size={12} />
-                  <span>Escalation: <span className="text-slate-200 font-medium">{policy.escalation_target}</span></span>
+                  <span>Escalation: <span className="text-[var(--text-primary)] font-medium">{policy.escalation_target}</span></span>
                 </div>
 
-                <hr className="border-slate-800/80" />
+                <hr className="border-[var(--border)]/50" />
 
                 {/* Action Items */}
                 <div className="flex-1 flex flex-col gap-3">
-                  <p className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Required Action items</p>
+                  <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Required Action items</p>
                   <div className="flex flex-col gap-2.5">
                     {policy.actions && policy.actions.map((act, i) => (
-                      <div key={i} className="bg-slate-900/80 border border-slate-800/60 p-2.5 rounded-lg flex flex-col gap-1.5">
+                      <div key={i} className="bg-[var(--bg-secondary)]/80 border border-[var(--border)]/60 p-2.5 rounded-lg flex flex-col gap-1.5">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs text-slate-200 font-medium leading-relaxed">{act.action}</p>
+                          <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">{act.action}</p>
                           <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded uppercase border ${getPriorityColor(act.priority)}`}>
                             {act.priority}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                          <span className="font-bold text-slate-400">Target:</span> {act.target}
+                        <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]">
+                          <span className="font-bold text-[var(--text-secondary)]">Target:</span> {act.target}
                         </div>
                       </div>
                     ))}
@@ -229,7 +229,7 @@ export default function Policy() {
                     </button>
                     <button 
                       onClick={() => updateStatus(policy.id, 'rejected')}
-                      className="p-2 bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-500 rounded-lg border border-slate-700 hover:border-rose-900 transition-colors"
+                      className="p-2 bg-[var(--bg-tertiary)] hover:bg-rose-950 text-[var(--text-secondary)] hover:text-rose-500 rounded-lg border border-[var(--border)] hover:border-rose-900 transition-colors"
                     >
                       <XCircle size={14} />
                     </button>
@@ -239,7 +239,7 @@ export default function Policy() {
                 {policy.status === 'approved' && (
                   <button 
                     onClick={() => updateStatus(policy.id, 'implemented')}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-colors mt-2"
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/80 text-[var(--text-primary)] rounded-lg text-xs font-semibold transition-colors mt-2"
                   >
                     <span>Mark Implemented</span> <ArrowRight size={14} />
                   </button>
@@ -250,7 +250,7 @@ export default function Policy() {
                     <select 
                       value={policy.status}
                       onChange={(e) => updateStatus(policy.id, e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-400"
+                      className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-secondary)]"
                     >
                       <option value="pending">Move to Pending</option>
                       <option value="approved">Move to Approved</option>

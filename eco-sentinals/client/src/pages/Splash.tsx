@@ -5,7 +5,6 @@ export default function Splash() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // TODO: Add Supabase session check to skip animation if logged in
     const timer = setTimeout(() => {
       navigate('/select');
     }, 2400);
@@ -14,7 +13,7 @@ export default function Splash() {
   }, [navigate]);
 
   return (
-    <div className="fixed inset-0 bg-[#0a0f0c] flex flex-col items-center justify-center text-white overflow-hidden">
+    <div className="fixed inset-0 bg-[var(--bg-primary)] flex flex-col items-center justify-center text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
       <style>{`
         @keyframes scaleIn {
           0% { transform: scale(0); opacity: 0; }
@@ -36,7 +35,7 @@ export default function Splash() {
 
       {/* Hexagon Logo */}
       <div className="w-24 h-24 mb-6 animate-scale-in">
-        <svg viewBox="0 0 120 120" className="w-full h-full text-[#3ecf8e]">
+        <svg viewBox="0 0 120 120" className="w-full h-full text-[var(--accent)]">
           <polygon points="60,10 103,35 103,85 60,110 17,85 17,35" fill="none" stroke="currentColor" strokeWidth="4" />
           {/* Small leaf inside */}
           <path d="M60,40 C68,48 68,60 60,72 C52,60 52,48 60,40 Z" fill="currentColor" opacity="0.9" />
@@ -44,7 +43,7 @@ export default function Splash() {
       </div>
 
       {/* Econode Title */}
-      <h1 className="text-4xl font-headline font-bold mb-2 flex">
+      <h1 className="text-4xl font-headline font-bold mb-2 flex text-[var(--text-primary)]">
         {"Econode".split("").map((letter, i) => (
           <span 
             key={i} 
@@ -57,13 +56,13 @@ export default function Splash() {
       </h1>
 
       {/* Tagline */}
-      <p className="text-slate-400 text-sm tracking-wider animate-tagline mb-8">
+      <p className="text-[var(--text-muted)] text-sm tracking-wider animate-tagline mb-8">
         Hyper-Local Air & Waste Intelligence
       </p>
 
       {/* Progress Bar Container */}
-      <div className="w-48 h-1 bg-neutral-800 rounded-full overflow-hidden">
-        <div className="h-full bg-[#3ecf8e] w-0 animate-progress"></div>
+      <div className="w-48 h-1 bg-[var(--bg-tertiary)] rounded-full overflow-hidden border border-[var(--border)]">
+        <div className="h-full bg-[var(--accent)] w-0 animate-progress"></div>
       </div>
     </div>
   );

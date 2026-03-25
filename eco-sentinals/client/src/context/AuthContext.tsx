@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '../utils/supabase';
 
 type UserRole = 'mcd' | 'citizen' | null;
@@ -12,42 +12,88 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-async function fetchRoleFromProfile(userId: string): Promise<UserRole> {
+async function fetchProfile(userId: string) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('role')
+    .select('id, full_name, role, ward_id')
     .eq('id', userId)
     .single();
 
-  if (error || !data?.role) {
-    // Fallback: guess from email domain if profile row doesn't exist yet
+  if (error) return null;
+  return data;
+}
+
+async function createProfile(userId: string, fullName: string, role: UserRole = 'citizen') {
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({ id: userId, full_name: fullName, role })
+    .select()
+    .single();
+
+  if (error) {
+    // Only log if it's not a duplicate key error (which can happen during race conditions)
+    if (error.code !== '23505') {
+      console.error('Error creating profile:', error);
+    }
     return null;
   }
-  return data.role as UserRole;
+  return data;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<any>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
+  const activeUserId = useRef<string | null>(null);
 
   const resolveRole = async (sess: any) => {
     if (!sess) {
+      activeUserId.current = null;
       setRole(null);
       return;
     }
-    // Try profiles table first
-    const profileRole = await fetchRoleFromProfile(sess.user.id);
-    if (profileRole) {
-      setRole(profileRole);
-      return;
-    }
-    // Fallback: derive from email domain
-    const email: string = sess.user.email || '';
-    if (email.endsWith('@mcdindia.gov.in') || email.endsWith('@delhi.gov.in') || email.endsWith('@ndmc.gov.in')) {
-      setRole('mcd');
-    } else {
-      setRole('citizen');
+
+    const { user } = sess;
+    // Prevent concurrent resolutions for the same user
+    if (activeUserId.current === user.id) return;
+    activeUserId.current = user.id;
+
+    try {
+      // 1. Try to fetch existing profile
+      let profile = await fetchProfile(user.id);
+      
+      if (!profile) {
+        // 2. If NO profile exists (New User)
+        // Always default to 'citizen' for new users for security
+        profile = await createProfile(
+          user.id, 
+          user.user_metadata?.full_name || user.email?.split('@')[0] || 'New User',
+          'citizen'
+        );
+
+        // If createProfile failed but it was a race (another request created it), try fetching again
+        if (!profile) {
+          profile = await fetchProfile(user.id);
+        }
+      }
+
+      if (profile) {
+        setRole(profile.role as UserRole);
+
+        // 3. Handle unauthorized MCD registration attempts
+        const selectedRole = sessionStorage.getItem('selected_role');
+        if (selectedRole === 'mcd' && profile.role !== 'mcd') {
+          // Redirect back to login with error - they are now registered as citizen but don't have MCD access
+          window.location.href = '/mcd/login?error=unauthorized';
+          return;
+        }
+      } else {
+        // Reset lock on failure so it can be re-attempted
+        activeUserId.current = null;
+      }
+    } catch (err) {
+      activeUserId.current = null;
+      console.error('Resolution error:', err);
     }
   };
 
@@ -68,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    activeUserId.current = null;
     await supabase.auth.signOut();
   };
 

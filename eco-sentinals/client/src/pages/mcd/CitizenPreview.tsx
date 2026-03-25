@@ -7,10 +7,10 @@ export default function CitizenPreview() {
 
   return (
     <McdLayout>
-      <div className="flex flex-col h-full bg-[#0a0f0c] -m-6">
+      <div className="flex flex-col h-full bg-[var(--bg-primary)] -m-6 transition-colors duration-300">
         
         {/* Navy Top Banner */}
-        <div className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-6 py-3 flex items-center justify-between z-10">
+        <div className="bg-[var(--bg-secondary)]/80 backdrop-blur-md border-b border-[var(--border)] px-6 py-3 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate('/mcd/dashboard')}
@@ -23,13 +23,13 @@ export default function CitizenPreview() {
               <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-md text-[10px] text-slate-400 font-mono">Citizen Interface</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
              <span>All citizen interactions are logged-disabled for inspection</span>
           </div>
         </div>
 
         {/* Mobile Simulator viewport */}
-        <div className="flex-1 flex items-center justify-center p-6 relative bg-[radial-gradient(ellipse_at_center,_var(--tw-colors-slate-900)_0%,_var(--tw-colors-black)_100%)]">
+        <div className="flex-1 flex items-center justify-center p-6 relative">
            <div className="relative shadow-2xl">
               {/* Phone Frame Outline */}
               <div className="w-[375px] h-[750px] rounded-[40px] border-[12px] border-slate-900 bg-slate-950 overflow-hidden relative shadow-2xl shadow-emerald-950/20">

@@ -148,7 +148,7 @@ ORDER BY ward_id, recorded_at DESC;
 
 -- ==========================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
--- ==========================================
+-- ===========
 
 -- Helper functions
 CREATE OR REPLACE FUNCTION get_user_role() RETURNS TEXT AS $$
@@ -166,6 +166,13 @@ $$ LANGUAGE SQL SECURITY DEFINER STABLE;
 -- Profiles: users see own row only
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "own profile" ON profiles FOR ALL USING (auth.uid() = id);
+
+-- Wards: MCD sees all, citizens see their own ward only
+ALTER TABLE wards ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "mcd all wards" ON wards FOR SELECT USING (is_mcd());
+CREATE POLICY "citizen own ward" ON wards FOR SELECT USING (
+  is_citizen() AND id = (SELECT ward_id FROM profiles WHERE id = auth.uid())
+);
 
 -- AQI: MCD sees all, citizens see their ward only
 ALTER TABLE aqi_readings ENABLE ROW LEVEL SECURITY;

@@ -1,13 +1,29 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { useEffect } from 'react';
 
 export default function AuthGuard({ requiredRole }: { requiredRole: 'mcd' | 'citizen' }) {
   const { session, role, loading } = useAuth();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (!loading && session && requiredRole && role !== requiredRole) {
+      const message = requiredRole === 'mcd' 
+        ? "Access denied — MCD accounts only" 
+        : "Access denied — Citizen accounts only";
+      showToast(message, 'error');
+      console.warn(`Unauthorized access attempt to ${requiredRole} route by ${role}`);
+    }
+  }, [loading, session, role, requiredRole, showToast]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0f0c] flex items-center justify-center text-white">
-        Loading...
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-primary)]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-medium animate-pulse text-sm">Validating clearance...</p>
+        </div>
       </div>
     );
   }

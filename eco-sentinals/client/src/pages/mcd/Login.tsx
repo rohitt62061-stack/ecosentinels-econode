@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../utils/supabase';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 export default function McdLogin() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,16 @@ export default function McdLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('error') === 'unauthorized') {
+      showToast('MCD access requires manual approval. Your account has been registered as a Citizen.', 'error');
+      setError('Unauthorized access. Please contact your administrator.');
+    }
+  }, [location, showToast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,16 +41,16 @@ export default function McdLogin() {
   };
 
   return (
-    <div className="min-h-screen flex text-white font-sans bg-[#0a0f0c]">
+    <div className="min-h-screen flex text-[var(--text-primary)] font-sans bg-[var(--bg-primary)] transition-colors duration-300">
       {/* Left Panel: Branding */}
-      <div className="hidden md:flex md:w-1/2 bg-[#1a3560] items-center justify-center p-12 relative overflow-hidden">
+      <div className="hidden md:flex md:w-1/2 bg-[var(--mcd-primary)] items-center justify-center p-12 relative overflow-hidden">
         <div className="max-w-md relative z-10">
           <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500"></div>
-            <span className="text-2xl font-bold text-[#3ecf8e]">Econode</span>
+            <div className="w-10 h-10 rounded-lg bg-[var(--accent)]"></div>
+            <span className="text-2xl font-bold text-[var(--accent)]">Econode</span>
           </div>
           <h1 className="text-4xl font-bold mb-4">MCD Officer Governance Portal</h1>
-          <p className="text-slate-300">
+          <p className="text-[var(--text-secondary)] opacity-80">
             Access secure, hyper-local intelligence maps, route optimizations, and analytical circular updates.
           </p>
         </div>
@@ -49,29 +60,29 @@ export default function McdLogin() {
       <div className="w-full md:w-1/2 flex items-center justify-center p-8">
         <div className="max-w-md w-full">
           <h2 className="text-2xl font-bold mb-2">Welcome Back</h2>
-          <p className="text-slate-400 mb-8">Sign in with your Supabase account</p>
+          <p className="text-[var(--text-muted)] mb-8">Sign in with your Supabase account</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="officer@mcdindia.gov.in"
-                className="w-full bg-[#111814] border border-[#1e2922] rounded-xl p-3 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--accent)]"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-[#111814] border border-[#1e2922] rounded-xl p-3 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-3 text-[var(--text-primary)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--accent)]"
                 required
               />
             </div>
@@ -83,14 +94,14 @@ export default function McdLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-[#00210c] font-bold rounded-xl transition-colors mt-6 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-[var(--accent-fg)] font-bold rounded-xl transition-colors mt-6 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={16} className="animate-spin" />}
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
-          <p className="text-center text-xs text-slate-600 mt-6">
+          <p className="text-center text-xs text-[var(--text-muted)] mt-6">
             Don't have an account? Contact your MCD administrator.
           </p>
         </div>

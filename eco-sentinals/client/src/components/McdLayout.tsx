@@ -1,10 +1,12 @@
 import { ReactNode, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Map, Truck, ShieldAlert, BarChart3, Eye, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Map, Truck, ShieldAlert, BarChart3, Eye, Menu, X, Sun, Moon, TreePine } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function McdLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const navItems = [
     { label: 'Dashboard', path: '/mcd/dashboard', icon: LayoutDashboard },
@@ -15,7 +17,7 @@ export default function McdLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex h-screen bg-[#0a0f0c] text-white">
+    <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
       
       {/* Sidebar Overlay for Mobile */}
       {isSidebarOpen && (
@@ -26,13 +28,13 @@ export default function McdLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Sidebar */}
-      <div className={`w-64 bg-[#111814] p-4 border-r border-[#1e2922] flex flex-col fixed md:static inset-y-0 left-0 z-[1100] transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-200 ease-in-out`}>
+      <div className={`w-64 bg-[var(--bg-secondary)] p-4 border-r border-[var(--border)] flex flex-col fixed md:static inset-y-0 left-0 z-[1100] transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-200 ease-in-out`}>
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded bg-emerald-500"></div>
-            <span className="text-xl font-bold tracking-tight text-[#3ecf8e]">Econode</span>
+            <span className="text-xl font-bold tracking-tight text-[var(--citizen-primary)]">Econode</span>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white">
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
              <X size={20} />
           </button>
         </div>
@@ -47,7 +49,7 @@ export default function McdLayout({ children }: { children: ReactNode }) {
                 `flex items-center gap-3 p-3 text-sm font-semibold rounded-xl transition-all ${
                   isActive 
                     ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
-                    : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]/50 hover:text-[var(--text-primary)]'
                 }`
               }
             >
@@ -58,15 +60,15 @@ export default function McdLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Bottom Actions footer panel linked to citizen preview */}
-        <div className="border-t border-[#1e2922] pt-4 mt-auto flex flex-col gap-2">
+        <div className="border-t border-[var(--border)] pt-4 mt-auto flex flex-col gap-2">
           <NavLink
             to="/mcd/citizen-preview"
             onClick={() => setIsSidebarOpen(false)}
             className={({ isActive }) => 
               `flex items-center gap-3 p-3 text-sm font-semibold rounded-xl transition-all ${
                 isActive 
-                  ? 'bg-slate-800 text-white' 
-                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                  ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' 
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]/50 hover:text-[var(--text-primary)]'
               }`
             }
           >
@@ -78,16 +80,46 @@ export default function McdLayout({ children }: { children: ReactNode }) {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-[#111814] border-b border-[#1e2922] flex items-center justify-between px-6 z-10">
+        <header className="h-16 bg-[var(--bg-secondary)] border-b border-[var(--border)] flex items-center justify-between px-6 z-10 transition-colors duration-300">
           <div className="flex items-center gap-3">
-             <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-slate-400 hover:text-white">
+             <button onClick={() => setIsSidebarOpen(true)} className="md:hidden text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                 <Menu size={24} />
              </button>
-             <span className="font-semibold text-slate-200">MCD Officer View</span>
+             <span className="font-semibold text-[var(--text-primary)]">MCD Officer View</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-700"></div>
+
+          <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <div className="flex items-center bg-[var(--bg-tertiary)] rounded-full p-1 border border-[var(--border)]">
+              <button 
+                onClick={() => setTheme('light')}
+                className={`p-1.5 rounded-full transition-all ${theme === 'light' ? 'bg-[var(--bg-secondary)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
+                title="Light Theme"
+              >
+                <Sun size={14} />
+              </button>
+              <button 
+                onClick={() => setTheme('dark')}
+                className={`p-1.5 rounded-full transition-all ${theme === 'dark' ? 'bg-[var(--bg-secondary)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
+                title="Dark Theme"
+              >
+                <Moon size={14} />
+              </button>
+              <button 
+                onClick={() => setTheme('civic')}
+                className={`p-1.5 rounded-full transition-all ${theme === 'civic' ? 'bg-[var(--bg-secondary)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
+                title="Civic Green"
+              >
+                <TreePine size={14} />
+              </button>
+            </div>
+
+            <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)]">
+              <BarChart3 size={16} />
+            </div>
+          </div>
         </header>
-        <main className="flex-1 p-6 overflow-y-auto w-full">
+        <main className="flex-1 overflow-y-auto w-full">
           {children}
         </main>
       </div>

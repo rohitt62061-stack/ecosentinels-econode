@@ -13,7 +13,7 @@ export default function CitizenLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0f0c] text-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
       
       {/* Main Content section */}
       <main className={`flex-1 overflow-y-auto p-4 relative ${isPreview ? 'select-none pointer-events-none' : ''}`}>
@@ -24,19 +24,19 @@ export default function CitizenLayout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Bottom Navigation */}
-      <footer className="min-h-[64px] pb-[env(safe-area-inset-bottom)] bg-[#111814] border-t border-[#1e2922] flex justify-around items-center px-4 z-[1000]">
+      <footer className="min-h-[64px] pb-[env(safe-area-inset-bottom)] bg-[var(--bg-secondary)] border-t border-[var(--border)] flex justify-around items-center px-4 z-[1000]">
         {tabs.map(tab => (
           <NavLink
             key={tab.path}
             to={`${tab.path}${isPreview ? '?preview=true' : ''}`}
             className={({ isActive }) => 
               `flex flex-col items-center cursor-pointer transition-colors ${
-                isActive ? 'text-[#3ecf8e]' : 'text-slate-500 hover:text-slate-300'
+                isActive ? 'text-[var(--citizen-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
               }`
             }
           >
             <div className={`w-8 h-8 flex items-center justify-center rounded-xl ${
-              location.pathname === tab.path ? 'bg-[#1a5c3a]/30' : ''
+              location.pathname === tab.path ? 'bg-[var(--citizen-primary)]/20' : ''
             }`}>
               <tab.icon size={20} />
             </div>
