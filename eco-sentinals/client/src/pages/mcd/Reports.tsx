@@ -4,6 +4,7 @@ import { supabase } from '../../utils/supabase';
 import { useAuthGuardedQuery } from '../../hooks/useAuthGuardedQuery';
 import { BarChart3, TrendingUp, Users, Leaf, Download, RefreshCw, FileText } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, Legend, ComposedChart } from 'recharts';
+import MlIntelligenceReport from '../../components/mcd/MlIntelligenceReport';
 
 export default function Reports() {
   const [filter, setFilter] = useState<'week' | 'month' | 'year'>('month');
@@ -17,17 +18,19 @@ export default function Reports() {
     leaderboard: any[];
     currentAqi: any[];
     historicalAqi: any[];
+    wardInfo: any;
   }>(async () => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const oneYearAgoStart = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000 - 7 * 24 * 60 * 60 * 1000).toISOString();
     const oneYearAgoEnd = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [eventsRes, routesRes, boardsRes, currentAqiRes, historicalAqiRes] = await Promise.all([
+    const [eventsRes, routesRes, boardsRes, currentAqiRes, historicalAqiRes, wardRes] = await Promise.all([
       supabase.from('waste_events').select('scanned_at, waste_category, user_id'),
       supabase.from('fleet_routes').select('captured_at, total_distance'),
       supabase.from('ward_leaderboard').select('*').limit(6),
       supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', sevenDaysAgo),
-      supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', oneYearAgoStart).lt('recorded_at', oneYearAgoEnd)
+      supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', oneYearAgoStart).lt('recorded_at', oneYearAgoEnd),
+      supabase.from('wards').select('id, ward_name, ward_number').limit(1).single()
     ]);
 
     return {
@@ -36,9 +39,10 @@ export default function Reports() {
         routes: routesRes.data || [],
         leaderboard: boardsRes.data || [],
         currentAqi: currentAqiRes.data || [],
-        historicalAqi: historicalAqiRes.data || []
+        historicalAqi: historicalAqiRes.data || [],
+        wardInfo: wardRes.data
       },
-      error: eventsRes.error || routesRes.error || boardsRes.error
+      error: eventsRes.error || routesRes.error || boardsRes.error || wardRes.error
     };
   }, [filter]);
 
@@ -368,6 +372,22 @@ export default function Reports() {
               </ResponsiveContainer>
             )}
           </div>
+        </div>
+
+        {/* ML Intelligence Report Section */}
+        <div className="bg-[var(--bg-secondary)]/30 border border-[var(--border)] rounded-2xl p-6 flex flex-col gap-6">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-black font-manrope text-[var(--text-primary)]">ML Intelligence Report</h2>
+            <p className="text-xs text-[var(--text-muted)] italic">Advanced statistical forecasting and Claude-driven environmental analytics</p>
+          </div>
+          
+          {rawData?.wardInfo && (
+            <MlIntelligenceReport 
+              wardId={rawData.wardInfo.id}
+              wardName={rawData.wardInfo.ward_name}
+              wardNumber={rawData.wardInfo.ward_number}
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
