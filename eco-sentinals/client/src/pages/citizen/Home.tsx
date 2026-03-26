@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n/config';
 import CitizenLayout from '../../components/CitizenLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useAuthGuardedQuery } from '../../hooks/useAuthGuardedQuery';
-import { Heart, Activity, ShieldCheck, RefreshCw, Clock, AlertTriangle, Camera } from 'lucide-react';
+import { Heart, Activity, ShieldCheck, RefreshCw, Clock, AlertTriangle, Camera, Megaphone } from 'lucide-react';
+import PollutionReportModal from '../../components/citizen/PollutionReportModal';
+import { getStreamClient, getStreamToken } from '../../utils/stream';
 
 interface AqiData {
   ward_name: string;
@@ -22,12 +26,14 @@ interface Advisory {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const { user, isReady } = useAuth();
   const [minutesAgo, setMinutesAgo] = useState(0);
 
   // Onboarding States
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardStep, setOnboardStep] = useState(1);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('onboarding_complete')) {
@@ -117,6 +123,75 @@ export default function Home() {
     return 'Hazardous';
   };
 
+  const getCommuteAdvice = (aqi: number, hour: number) => {
+    const isRushHour = (hour >= 7 && hour <= 10) || (hour >= 17 && hour <= 20);
+    
+    if (aqi <= 50) return { 
+      mode: '🚴 Cycle freely', color: '#16a34a', // green
+      tip: 'Excellent air today. Great day for a bike ride or walk.',
+      icons: { walk: true, cycle: true, bus: true, metro: true }
+    };
+    if (aqi <= 100) return { 
+      mode: '🚶 Walk is fine', color: '#ca8a04', // yellow
+      tip: isRushHour ? 'Avoid main roads during peak traffic. Side lanes are okay.' 
+                      : 'Air is acceptable. A short mask is optional.',
+      icons: { walk: true, cycle: true, bus: true, metro: true }
+    };
+    if (aqi <= 150) return { 
+      mode: '🪖 Wear N95 mask', color: '#ea580c', // orange
+      tip: 'Use metro or bus if possible. Avoid cycling. Carry N95.',
+      icons: { walk: true, cycle: false, bus: true, metro: true }
+    };
+    if (aqi <= 200) return { 
+      mode: '🚇 Take metro/bus', color: '#dc2626', // red
+      tip: 'Avoid outdoor exposure. If must commute, wear N95 and travel quickly.',
+      icons: { walk: false, cycle: false, bus: true, metro: true }
+    };
+    return { 
+      mode: '🏠 Stay indoors', color: '#7c3aed', // purple
+      tip: 'Hazardous air quality. Work from home if possible. Essential travel only.',
+      icons: { walk: false, cycle: false, bus: false, metro: false }
+    };
+  };
+
+  const handleReportSubmit = async (report: { type: string; description: string }) => {
+    if (!user || !aqi) return;
+
+    try {
+      const token = getStreamToken(user.id);
+      const client = getStreamClient();
+      
+      // Get Profile for ward_id again to ensure accuracy
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('ward_id')
+        .eq('id', user.id)
+        .single();
+
+      const wardId = profile?.ward_id;
+      if (!wardId) throw new Error('Ward ID not found');
+
+      // Connect to the ward feed
+      const wardFeed = client.feed('ward', wardId, token);
+      
+      await wardFeed.addActivity({
+        actor: user.id,
+        verb: 'reported',
+        object: report.type,
+        description: report.description,
+        ward_id: wardId,
+        ward_name: aqi.ward_name,
+        location: { lat: aqi.latitude, lng: aqi.longitude },
+        timestamp: new Date().toISOString()
+      });
+
+      alert('Report submitted successfully to live feed!');
+    } catch (err) {
+      console.error('Failed to submit report:', err);
+      alert('Failed to submit report. Please try again.');
+    }
+  };
+
   const getGaugeOffset = (aqi: number) => {
     const radius = 120;
     const circumference = 2 * Math.PI * radius;
@@ -192,14 +267,26 @@ export default function Home() {
         {/* Header */}
         <div className="p-4 flex items-center justify-between border-b border-[var(--border)]">
           <div>
-            <p className="text-xs text-[var(--text-muted)]">Current Area</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('citizen.ward_label')}</p>
             <h3 className="font-bold text-lg flex items-center gap-1" style={{ fontFamily: 'var(--font-display)' }}>
               📍 {aqi.ward_name}, Delhi
             </h3>
           </div>
-          <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-1 rounded-md">
-            <Clock size={12} />
-            <span>{minutesAgo === 0 ? 'Just updated' : `${minutesAgo} min ago`}</span>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => {
+                const nextLang = i18n.language === 'en' ? 'hi' : 'en';
+                i18n.changeLanguage(nextLang);
+                localStorage.setItem('econode-lang', nextLang);
+              }}
+              className="text-[10px] font-bold bg-[var(--bg-secondary)] border border-[var(--border)] px-2 py-1 rounded-md text-[var(--text-muted)] hover:text-emerald-400 transition-colors"
+            >
+              {i18n.language === 'en' ? 'EN | हि' : 'हि | EN'}
+            </button>
+            <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-1 rounded-md">
+              <Clock size={12} />
+              <span>{minutesAgo === 0 ? 'Just updated' : `${minutesAgo} min ago`}</span>
+            </div>
           </div>
         </div>
 
@@ -228,7 +315,7 @@ export default function Home() {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center transform rotate-0 mt-3">
-            <span className="text-xs uppercase text-[var(--text-muted)] font-semibold tracking-wider">AQI</span>
+            <span className="text-xs uppercase text-[var(--text-muted)] font-semibold tracking-wider">{t('citizen.aqi_label')}</span>
             <h1 className="text-6xl font-black font-manrope tracking-tighter" style={{ color }}>
               {aqi.aqi_value}
             </h1>
@@ -242,15 +329,22 @@ export default function Home() {
         <div className="px-4 mb-5">
           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4" style={{ borderLeft: `4px solid ${color}` }}>
             <h4 className="font-bold text-sm mb-2 flex items-center gap-1.5 text-[var(--text-primary)]">
-              <ShieldCheck size={16} style={{ color }} /> Today's Advisory
+              <ShieldCheck size={16} style={{ color }} /> {t('citizen.advisory_title')}
             </h4>
             <ul className="space-y-2">
               {advisories.length > 0 ? (
                 advisories.flatMap((advice) => {
                   let tips = [];
                   try {
-                    tips = JSON.parse(advice.suggestion_text);
-                    if (!Array.isArray(tips)) tips = [advice.suggestion_text];
+                    const parsed = JSON.parse(advice.suggestion_text);
+                    // Check if bilingual format: [{'en': '...', 'hi': '...'}]
+                    if (Array.isArray(parsed) && typeof parsed[0] === 'object') {
+                      tips = parsed.map(item => item[i18n.language] || item['en']);
+                    } else if (Array.isArray(parsed)) {
+                      tips = parsed;
+                    } else {
+                      tips = [advice.suggestion_text];
+                    }
                   } catch (e) {
                     tips = [advice.suggestion_text];
                   }
@@ -266,6 +360,78 @@ export default function Home() {
               )}
             </ul>
           </div>
+        </div>
+
+        {/* Today's Commute Card */}
+        {aqi && (
+          <div className="px-4 mb-5">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 overflow-hidden relative">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="font-bold text-sm mb-1">{t('citizen.commute_title')}</h4>
+                  <div 
+                    className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider"
+                    style={{ backgroundColor: `${getCommuteAdvice(aqi.aqi_value, new Date().getHours()).color}20`, color: getCommuteAdvice(aqi.aqi_value, new Date().getHours()).color }}
+                  >
+                    {getCommuteAdvice(aqi.aqi_value, new Date().getHours()).mode}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    const advice = getCommuteAdvice(aqi.aqi_value, new Date().getHours());
+                    const message = `Econode ${aqi.ward_name} AQI today: ${aqi.aqi_value}. Recommendation: ${advice.mode.split(' ').slice(1).join(' ')}. Check yours at ${window.location.origin}`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+                  }}
+                  className="p-2 bg-[var(--bg-tertiary)] rounded-lg text-[var(--text-muted)] hover:text-[var(--citizen-primary)] transition-all"
+                  title="Share advisory"
+                >
+                  <Megaphone size={14} />
+                </button>
+              </div>
+
+              <p className="text-xs text-[var(--text-muted)] mb-4 leading-relaxed">
+                {getCommuteAdvice(aqi.aqi_value, new Date().getHours()).tip}
+              </p>
+
+              <div className="flex items-center gap-4 pt-4 border-t border-[var(--border)] border-dashed">
+                {[
+                  { id: 'walk', label: 'Walk', icon: '🚶' },
+                  { id: 'cycle', label: 'Cycle', icon: '🚴' },
+                  { id: 'bus', label: 'Bus', icon: '🚌' },
+                  { id: 'metro', label: 'Metro', icon: '🚇' }
+                ].map(item => {
+                  const isEnabled = (getCommuteAdvice(aqi.aqi_value, new Date().getHours()).icons as any)[item.id];
+                  return (
+                    <div key={item.id} className={`flex flex-col items-center gap-1 ${isEnabled ? 'opacity-100' : 'opacity-20 grayscale'}`}>
+                       <span className="text-xl">{item.icon}</span>
+                       <span className="text-[8px] font-bold uppercase tracking-tighter">{item.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reporting Action */}
+        <div className="px-4 mb-6">
+          <button 
+            onClick={() => setReportModalOpen(true)}
+            className="w-full flex items-center justify-between p-4 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl hover:bg-[var(--bg-tertiary)] transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+                <Megaphone size={18} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold">{t('citizen.report_button')}</p>
+                <p className="text-[10px] text-[var(--text-muted)]">Spotted something? Let the MCD know instantly.</p>
+              </div>
+            </div>
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--bg-tertiary)] group-hover:bg-[var(--bg-primary)] transition-all">
+              <span className="text-lg">→</span>
+            </div>
+          </button>
         </div>
 
         {/* Quick Stats Grid 2x2 */}
@@ -293,7 +459,7 @@ export default function Home() {
             <p className="text-lg font-bold text-[var(--text-muted)] opacity-30 text-center">-</p>
           </div>
           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl flex flex-col justify-center">
-            <span className="text-xs text-[var(--text-muted)] mb-1">Eco Score</span>
+            <span className="text-xs text-[var(--text-muted)] mb-1">{t('citizen.score_title')}</span>
             <div className="flex items-center gap-1 justify-center">
               <Heart size={16} className="text-rose-500 fill-rose-500" />
               <span className="font-bold text-[var(--text-muted)] opacity-30">--</span>
@@ -317,8 +483,8 @@ export default function Home() {
                          <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400">
                             <Activity size={32} />
                          </div>
-                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">See Your Ward's Air Quality</h3>
-                         <p className="text-xs text-[var(--text-muted)] px-4">Get hyper-local real-time AQI updates and AI health advisories specifically for your local street node.</p>
+                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">{t('citizen.onboarding.step1_title')}</h3>
+                         <p className="text-xs text-[var(--text-muted)] px-4">{t('citizen.onboarding.step1_desc')}</p>
                       </div>
                    )}
                    {onboardStep === 2 && (
@@ -326,17 +492,17 @@ export default function Home() {
                          <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400">
                             <Camera size={32} />
                          </div>
-                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">Scan Waste, Earn Rewards</h3>
-                         <p className="text-xs text-[var(--text-muted)] px-4">Snap pictures of waste nodes to classify them accurately. Earn Eco Credits for your environmental stewardship.</p>
+                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">{t('citizen.onboarding.step2_title')}</h3>
+                         <p className="text-xs text-[var(--text-muted)] px-4">{t('citizen.onboarding.step2_desc')}</p>
                       </div>
                    )}
                    {onboardStep === 3 && (
                       <div className="flex flex-col items-center gap-3 animate-slideIn">
                          <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-400">
                             <Heart size={32} className="fill-amber-500" />
-                         </div>
-                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">Help Your Community</h3>
-                         <p className="text-xs text-[var(--text-muted)] px-4">Climb your local ward leaderboard. Higher precision yields better environment benchmarks for your family.</p>
+                          </div>
+                         <h3 className="text-xl font-black font-manrope text-[var(--text-primary)]">{t('citizen.onboarding.step3_title')}</h3>
+                         <p className="text-xs text-[var(--text-muted)] px-4">{t('citizen.onboarding.step3_desc')}</p>
                       </div>
                    )}
                 </div>
@@ -354,6 +520,12 @@ export default function Home() {
              </div>
           </div>
         )}
+        {/* Reporting Modal */}
+        <PollutionReportModal 
+          isOpen={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          onSubmit={handleReportSubmit}
+        />
       </div>
     </CitizenLayout>
   );

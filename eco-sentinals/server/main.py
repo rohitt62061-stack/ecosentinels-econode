@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List
 import cv2
 import time
 import json
@@ -121,6 +122,48 @@ async def policy_alert():
         "status": "SAFE",
         "message": "Within safe limits",
         "aqi": latest_aqi
+    }
+
+# --- Intelligence Layer ---
+from app.services.waste_intelligence import WasteIntelligence
+
+@app.get("/ghost-waste")
+async def get_ghost_waste():
+    """
+    Predicts unreported waste hotspots.
+    In a real app, 'latest_readings' and 'pollution_detections' 
+    would be fetched from Supabase. We mock them here for the demo.
+    """
+    mock_readings = [
+        {"bin_id": "BIN-001", "ward_id": "ward_1", "fill_level_pct": 82, "latitude": 28.6139, "longitude": 77.2090},
+        {"bin_id": "BIN-002", "ward_id": "ward_2", "fill_level_pct": 40, "latitude": 28.6120, "longitude": 77.2150},
+    ]
+    mock_pollution = [
+        {"ward_id": "ward_1", "pm25": 178},
+        {"ward_id": "ward_2", "pm25": 45},
+    ]
+    
+    ghosts = WasteIntelligence.find_ghost_waste(mock_readings, mock_pollution)
+    return {"status": "success", "ghost_nodes": ghosts}
+
+class OptimizationRequest(BaseModel):
+    locations: List[List[float]] # [[lat, lng], ...]
+
+@app.post("/optimize-fleet")
+async def optimize_fleet(req: OptimizationRequest):
+    """
+    Runs ACO algorithm to find the optimal collection path.
+    """
+    if not req.locations:
+        return {"status": "error", "message": "No locations provided"}
+        
+    locations_tuple = [tuple(loc) for loc in req.locations]
+    indices = WasteIntelligence.aco_route_optimize(locations_tuple)
+    
+    return {
+        "status": "success", 
+        "optimized_indices": indices,
+        "algorithm": "Ant Colony Optimization (ACO)"
     }
 
 # --- Mock Firebase Endpoint for ESP32 ---

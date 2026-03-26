@@ -10,6 +10,7 @@ import {
 import { 
   AlertTriangle, Download, Zap, Target
 } from 'lucide-react';
+import CitizenReportsPanel from '../../components/mcd/CitizenReportsPanel';
 
 interface Ward {
   id: string;
@@ -278,42 +279,47 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Realtime Alerts Panel */}
-            <div className="bg-[var(--surface-container-low)] rounded-[var(--radius-lg)] p-8 flex flex-col">
-              <div className="flex items-center gap-2 mb-8">
-                <AlertTriangle size={16} className="text-rose-600" />
-                <h3 className="text-sm font-bold" style={{ fontFamily: 'var(--font-display)' }}>Live Indices</h3>
+            {/* Sidebar Column */}
+            <div className="flex flex-col gap-8">
+              {/* Citizen Reports Live Feed */}
+              <div className="bg-[var(--surface-container-low)] rounded-[var(--radius-lg)] p-8 h-[500px] flex flex-col">
+                <CitizenReportsPanel />
               </div>
 
-              <div className="space-y-4 flex-1 overflow-y-auto">
-                {fetchingAlerts ? (
-                  [1, 2, 3].map(i => <div key={i} className="h-20 bg-[var(--surface-container)] rounded-[var(--radius-md)] animate-pulse" />)
-                ) : alerts.length > 0 ? (
-                  alerts.map(a => (
-                    <div key={a.id} className="p-4 bg-[var(--surface)] rounded-[var(--radius-md)] relative overflow-hidden group hover:shadow-[var(--shadow-ambient)] transition-all">
-                      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-rose-600 opacity-50"></div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] font-bold text-[var(--text-primary)]">{a.wards?.ward_name}</span>
-                        <span className="text-[9px] font-mono text-[var(--text-muted)]">
-                          {new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+              {/* Realtime Alerts Panel */}
+              <div className="bg-[var(--surface-container-low)] rounded-[var(--radius-lg)] p-8 flex flex-col h-[400px]">
+                <div className="flex items-center gap-2 mb-8">
+                  <AlertTriangle size={16} className="text-rose-600" />
+                  <h3 className="text-sm font-bold" style={{ fontFamily: 'var(--font-display)' }}>Live Indices / Anomalies</h3>
+                </div>
+
+                <div className="space-y-4 flex-1 overflow-y-auto">
+                  {fetchingAlerts ? (
+                    [1, 2, 3].map(i => <div key={i} className="h-20 bg-[var(--surface-container)] rounded-[var(--radius-md)] animate-pulse" />)
+                  ) : alerts.length > 0 ? (
+                    alerts.map(a => (
+                      <div key={a.id} className="p-4 bg-[var(--surface)] rounded-[var(--radius-md)] relative overflow-hidden group hover:shadow-[var(--shadow-ambient)] transition-all">
+                        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-rose-600 opacity-50"></div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold text-[var(--text-primary)]">{a.wards?.ward_name}</span>
+                          <span className="text-[9px] font-mono text-[var(--text-muted)]">
+                            {new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 bg-rose-600/10 text-rose-600 text-[8px] font-bold uppercase tracking-wider rounded">
+                            {a.source_type}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-rose-600/10 text-rose-600 text-[8px] font-bold uppercase tracking-wider rounded">
-                          {a.source_type}
-                        </span>
-                      </div>
-                      <button className="mt-3 text-[9px] font-mono text-[var(--primary)] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                        Audit Case →
-                      </button>
+                    ))
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 italic p-4">
+                      <Zap size={24} className="mb-4" />
+                      <p className="text-[10px] font-mono uppercase tracking-widest">Atmosphere Stable</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 italic p-4">
-                    <Zap size={24} className="mb-4" />
-                    <p className="text-[10px] font-mono uppercase tracking-widest">Atmosphere Stable</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>

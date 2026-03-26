@@ -1,0 +1,23 @@
+{
+  "citizen": {
+    "aqi_label": "Air Quality Index",
+    "ward_label": "Your Ward",
+    "advisory_title": "Today's Advisory",
+    "scan_button": "Scan Waste",
+    "scan_placeholder": "Take a photo or type an item name",
+    "score_title": "Your Eco Score",
+    "report_button": "Report an Issue",
+    "commute_title": "Today's Commute",
+    "onboarding": {
+      "step1_title": "See Your Ward's Air Quality",
+      "step1_desc": "Get hyper-local real-time AQI updates and AI health advisories specifically for your local street node.",
+      "step2_title": "Scan Waste, Earn Rewards",
+      "step2_desc": "Snap pictures of waste nodes to classify them accurately. Earn Eco Credits for your environmental stewardship.",
+      "step3_title": "Help Your Community",
+      "step3_desc": "Climb your local ward leaderboard. Higher precision yields better environment benchmarks for your family.",
+      "continue": "Continue",
+      "get_started": "Get Started",
+      "skip": "Skip"
+    }
+  }
+}

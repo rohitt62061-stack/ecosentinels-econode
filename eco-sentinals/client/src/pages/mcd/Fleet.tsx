@@ -6,7 +6,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { 
   Trash2, Battery, AlertCircle, CheckCircle, Settings 
 } from 'lucide-react';
-import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -95,36 +95,73 @@ export default function Fleet() {
     return { total, needsCollection, avgFill };
   }, [filteredBins]);
 
+  const [ghostNodes, setGhostNodes] = useState<any[]>([]);
+  const [showGhosts, setShowGhosts] = useState(true);
+
+  // 3. Fetch Ghost Waste (Predictive)
+  const fetchGhostNodes = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/ghost-waste');
+      const data = await res.json();
+      if (data.status === 'success') {
+        setGhostNodes(data.ghost_nodes);
+      }
+    } catch (err) {
+      console.error("Ghost Waste Fetch Error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchGhostNodes();
+  }, []);
+
   const optimizeRoutes = async () => {
     try {
       setOptimizing(true);
-      const fullyBins = bins.filter(b => (selectedWard === 'all' || b.ward_id === selectedWard) && b.fill_level_pct > 70);
-      if (fullyBins.length < 3) {
-        showToast('No collection needed today — all bins under 70%', 'info');
+      const collectionTargets = [
+        ...bins.filter(b => (selectedWard === 'all' || b.ward_id === selectedWard) && b.fill_level_pct > 70),
+        ...(showGhosts ? ghostNodes : [])
+      ];
+
+      if (collectionTargets.length < 2) {
+        showToast('Not enough targets for optimization', 'info');
         return;
       }
-      const chunk = Math.ceil(fullyBins.length / 3);
-      const groups = [fullyBins.slice(0, chunk), fullyBins.slice(chunk, chunk * 2), fullyBins.slice(chunk * 2)];
-      const fetchedRoutes = [];
-      for (let i = 0; i < groups.length; i++) {
-        const group = groups[i];
-        if (group.length === 0) continue;
-        const coords = group.map(b => `${b.longitude},${b.latitude}`).join(';');
-        const res = await fetch(`http://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
-        const data = await res.json();
-        if (data.routes && data.routes[0]) {
-          fetchedRoutes.push({
-            truckId: i + 1,
-            binsCount: group.length,
-            distance: data.routes[0].distance / 1000,
-            duration: data.routes[0].duration / 60,
-            geometry: data.routes[0].geometry.coordinates.map((pos: any) => [pos[1], pos[0]])
-          });
+
+      // Call Backend ACO Optimizer
+      const locations = collectionTargets.map(t => [t.latitude, t.longitude]);
+      const res = await fetch('http://localhost:8000/optimize-fleet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locations })
+      });
+      
+      const data = await res.json();
+      
+      if (data.status === 'success') {
+        const optimizedIndices = data.optimized_indices;
+        const sortedTargets = optimizedIndices.map((idx: number) => collectionTargets[idx]);
+        
+        // Final Pathing via OSRM for matched indices
+        const coords = sortedTargets.map((t: any) => `${t.longitude},${t.latitude}`).join(';');
+        const osrmRes = await fetch(`http://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
+        const osrmData = await osrmRes.json();
+        
+        if (osrmData.routes && osrmData.routes[0]) {
+          setRoutes([{
+            truckId: 1,
+            binsCount: sortedTargets.length,
+            distance: osrmData.routes[0].distance / 1000,
+            duration: osrmData.routes[0].duration / 60,
+            geometry: osrmData.routes[0].geometry.coordinates.map((pos: any) => [pos[1], pos[0]]),
+            algorithm: "ACO (Ant Colony)"
+          }]);
+          showToast('ACO Optimization Complete: Route calculated.', 'success');
         }
       }
-      setRoutes(fetchedRoutes);
     } catch (err) {
       console.error("Route Optimization Error:", err);
+      showToast('Optimization Failed', 'error');
     } finally {
       setOptimizing(false);
     }
@@ -283,29 +320,40 @@ export default function Fleet() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-wide">Route Optimizer</h3>
-              <p className="text-[11px] text-[var(--text-muted)]">Autonomous collection tracking utilizing OSRM APIs</p>
+              <p className="text-[11px] text-[var(--text-muted)]">Autonomous collection tracking utilizing ACO (Ant Colony Optimization)</p>
             </div>
-            <button 
-              onClick={optimizeRoutes}
-              disabled={optimizing || selectedWard === 'all'}
-              className={`px-4 py-2 rounded-xl border text-xs font-black transition-all ${
-                selectedWard === 'all' 
-                  ? 'bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-muted)] cursor-not-allowed' 
-                  : 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500/20 shadow-lg shadow-emerald-500/10'
-              }`}
-            >
-              {optimizing ? 'Calculating...' : 'Optimize routes'}
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)]">
+                <span className="text-[10px] font-black uppercase text-[var(--text-muted)]">Predictive Layer</span>
+                <button 
+                  onClick={() => setShowGhosts(!showGhosts)}
+                  className={`w-8 h-4 rounded-full relative transition-colors ${showGhosts ? 'bg-emerald-500' : 'bg-[var(--bg-tertiary)]'}`}
+                >
+                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${showGhosts ? 'left-4.5' : 'left-0.5'}`} />
+                </button>
+              </div>
+              <button 
+                onClick={optimizeRoutes}
+                disabled={optimizing || selectedWard === 'all'}
+                className={`px-4 py-2 rounded-xl border text-xs font-black transition-all ${
+                  selectedWard === 'all' 
+                    ? 'bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-muted)] cursor-not-allowed' 
+                    : 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500/20 shadow-lg shadow-emerald-500/10'
+                }`}
+              >
+                {optimizing ? 'Calculating...' : 'Optimize routes'}
+              </button>
+            </div>
           </div>
 
-          {routes.length > 0 && (
+          {(routes.length > 0 || (showGhosts && ghostNodes.length > 0)) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                {routes.map(r => (
+                {routes.length > 0 ? routes.map(r => (
                   <div key={r.truckId} className="bg-[var(--bg-primary)]/60 border border-[var(--border)] p-3 rounded-xl flex flex-col gap-1.5 relative overflow-hidden">
                      <div className="flex items-center justify-between">
-                       <span className={`text-[11px] font-black uppercase tracking-wide ${r.truckId === 1 ? 'text-blue-400' : r.truckId === 2 ? 'text-purple-400' : 'text-amber-400'}`}>Truck #{r.truckId}</span>
-                       <span className="text-[10px] text-[var(--text-muted)]">{r.binsCount} full bins</span>
+                       <span className={`text-[11px] font-black uppercase tracking-wide text-emerald-400`}>Optimized Path (ACO)</span>
+                       <span className="text-[10px] text-[var(--text-muted)]">{r.binsCount} targets</span>
                      </div>
                      <div className="grid grid-cols-2 gap-2 text-xs">
                        <div className="flex flex-col">
@@ -318,12 +366,18 @@ export default function Fleet() {
                        </div>
                      </div>
                   </div>
-                ))}
-                <button onClick={saveRoutes} className="w-full py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors mt-1">Save Route Manifest</button>
+                )) : (
+                  <div className="bg-[var(--bg-primary)]/40 border border-dashed border-[var(--border)] p-8 rounded-xl flex items-center justify-center text-[var(--text-muted)] text-[10px] uppercase font-bold tracking-widest">
+                    Run Optimizer to calculate path
+                  </div>
+                )}
+                {routes.length > 0 && (
+                  <button onClick={saveRoutes} className="w-full py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors mt-1">Save Route Manifest</button>
+                )}
               </div>
-              <div className="h-48 md:h-auto bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] overflow-hidden relative z-10">
+              <div className="h-48 md:h-auto bg-[var(--bg-primary)] rounded-xl border border-[var(--border)] overflow-hidden relative z-10 min-h-[300px]">
                 {/* @ts-ignore */}
-                <MapContainer center={[28.6139, 77.2090] as [number, number]} zoom={12} className="w-full h-full">
+                <MapContainer center={[28.6139, 77.2090] as [number, number]} zoom={13} className="w-full h-full">
                    {/* @ts-ignore */}
                    <TileLayer 
                      key={theme}
@@ -332,20 +386,43 @@ export default function Fleet() {
                        theme === 'civic' ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" :
                        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                      } 
+                     /* @ts-ignore */
                      attribution={
                        theme === 'dark' ? "© OpenStreetMap © CARTO" :
                        theme === 'civic' ? "© OpenStreetMap © CARTO" :
                        "© OpenStreetMap contributors"
                      }
-                     className={
-                       theme === 'dark' ? 'map-tiles-dark' :
-                       theme === 'civic' ? 'map-tiles-civic' :
-                       'map-tiles-light'
-                     }
                    />
+                   
+                   {/* Ghost Nodes */}
+                   {showGhosts && ghostNodes.map((g: any) => (
+                      /* @ts-ignore */
+                      <CircleMarker 
+                        key={g.id}
+                        center={[g.latitude, g.longitude]}
+                        radius={15}
+                        pathOptions={{ 
+                          fillColor: '#fbbf24', 
+                          fillOpacity: 0.2, 
+                          color: '#fbbf24', 
+                          weight: 1,
+                          dashArray: '5, 5'
+                        }}
+                      >
+                         {/* @ts-ignore */}
+                        <Popup>
+                          <div className="p-2 min-w-[120px]">
+                            <div className="text-[10px] font-black uppercase tracking-tight text-amber-500">Ghost Waste Node</div>
+                            <div className="text-[9px] text-[var(--text-secondary)] mt-1 font-bold">Confidence: {(g.confidence * 100).toFixed(0)}%</div>
+                            <div className="text-[8px] text-[var(--text-muted)] mt-0.5 italic">High correlation with PM2.5 spike</div>
+                          </div>
+                        </Popup>
+                      </CircleMarker>
+                   ))}
+
                    {routes.map(r => (
                       /* @ts-ignore */
-                      <Polyline key={r.truckId} positions={r.geometry as [number, number][]} pathOptions={{ color: r.truckId === 1 ? '#60a5fa' : r.truckId === 2 ? '#a78bfa' : '#fbbf24', weight: 4 }} />
+                      <Polyline key={r.truckId} positions={r.geometry as [number, number][]} pathOptions={{ color: '#10b981', weight: 4, lineCap: 'round' }} />
                    ))}
                 </MapContainer>
               </div>

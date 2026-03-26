@@ -11,9 +11,11 @@ import Fleet from './pages/mcd/Fleet';
 import Policy from './pages/mcd/Policy';
 import Reports from './pages/mcd/Reports';
 import CitizenPreview from './pages/mcd/CitizenPreview';
+import UserManagement from './pages/mcd/UserManagement';
 import Home from './pages/citizen/Home';
 import Waste from './pages/citizen/Waste';
 import Score from './pages/citizen/Score';
+import { AuthCallback } from './pages/auth/AuthCallback';
 
 export default function App() {
   return (
@@ -27,6 +29,7 @@ export default function App() {
           {/* Auth Routes */}
           <Route path="/mcd/login" element={<McdLogin />} />
           <Route path="/citizen/login" element={<CitizenLogin />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Protected MCD Routes */}
           <Route element={<AuthGuard requiredRole="mcd" />}>
@@ -36,6 +39,7 @@ export default function App() {
             <Route path="/mcd/policy" element={<Policy />} />
             <Route path="/mcd/reports" element={<Reports />} />
             <Route path="/mcd/citizen-preview" element={<CitizenPreview />} />
+            <Route path="/mcd/settings/users" element={<UserManagement />} />
           </Route>
 
           {/* Protected Citizen Routes */}

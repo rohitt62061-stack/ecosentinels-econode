@@ -73,6 +73,20 @@ export default function McdLayout({ children }: { children: ReactNode }) {
             <Eye size={18} />
             Preview Citizen View
           </NavLink>
+          <NavLink
+            to="/mcd/settings/users"
+            onClick={() => setIsSidebarOpen(false)}
+            className={({ isActive }) => 
+              `flex items-center gap-3 p-3 text-sm font-semibold rounded-xl transition-all ${
+                isActive 
+                  ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' 
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]/50 hover:text-[var(--text-primary)]'
+              }`
+            }
+          >
+            <ShieldAlert size={18} />
+            Manage Officers
+          </NavLink>
         </div>
       </div>
       

@@ -3,11 +3,10 @@ import McdLayout from '../../components/McdLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuthGuardedQuery } from '../../hooks/useAuthGuardedQuery';
 import { BarChart3, TrendingUp, Users, Leaf, Download, RefreshCw, FileText } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, Legend, ComposedChart } from 'recharts';
 
 export default function Reports() {
   const [filter, setFilter] = useState<'week' | 'month' | 'year'>('month');
-  const [aiReport, setAiReport] = useState<string>("");
   const [generating, setGenerating] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -16,18 +15,28 @@ export default function Reports() {
     events: any[];
     routes: any[];
     leaderboard: any[];
+    currentAqi: any[];
+    historicalAqi: any[];
   }>(async () => {
-    const [eventsRes, routesRes, boardsRes] = await Promise.all([
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const oneYearAgoStart = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000 - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const oneYearAgoEnd = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [eventsRes, routesRes, boardsRes, currentAqiRes, historicalAqiRes] = await Promise.all([
       supabase.from('waste_events').select('scanned_at, waste_category, user_id'),
       supabase.from('fleet_routes').select('captured_at, total_distance'),
-      supabase.from('ward_leaderboard').select('*').limit(6)
+      supabase.from('ward_leaderboard').select('*').limit(6),
+      supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', sevenDaysAgo),
+      supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', oneYearAgoStart).lt('recorded_at', oneYearAgoEnd)
     ]);
 
     return {
       data: {
         events: eventsRes.data || [],
         routes: routesRes.data || [],
-        leaderboard: boardsRes.data || []
+        leaderboard: boardsRes.data || [],
+        currentAqi: currentAqiRes.data || [],
+        historicalAqi: historicalAqiRes.data || []
       },
       error: eventsRes.error || routesRes.error || boardsRes.error
     };
@@ -78,22 +87,176 @@ export default function Reports() {
         groupedFleet[date].emissionsSaved += saved;
     });
 
+    // Group YoY AQI (7-day rolling average style)
+    const yoyData: Record<string, any> = {};
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Use a fixed set of days for the chart
+    days.forEach(day => {
+      yoyData[day] = { day, current: 0, historical: 0, currentCount: 0, historicalCount: 0 };
+    });
+
+    (rawData?.currentAqi || []).forEach(r => {
+      const day = days[new Date(r.recorded_at).getDay()];
+      yoyData[day].current += r.aqi_value;
+      yoyData[day].currentCount += 1;
+    });
+
+    (rawData?.historicalAqi || []).forEach(r => {
+      const day = days[new Date(r.recorded_at).getDay()];
+      yoyData[day].historical += r.aqi_value;
+      yoyData[day].historicalCount += 1;
+    });
+
+    const comparison = Object.values(yoyData).map((d: any) => ({
+      day: d.day,
+      current: d.currentCount ? Math.round(d.current / d.currentCount) : 0,
+      historical: d.historicalCount ? Math.round(d.historical / d.historicalCount) : 0,
+    }));
+
+    // Calculate improvement percentage
+    const avgCurrent = comparison.reduce((acc, d) => acc + d.current, 0) / (comparison.filter(d => d.current > 0).length || 1);
+    const avgHistorical = comparison.reduce((acc, d) => acc + d.historical, 0) / (comparison.filter(d => d.historical > 0).length || 1);
+    const improvement = avgHistorical > 0 ? Math.round(((avgHistorical - avgCurrent) / avgHistorical) * 100) : 0;
+
     return {
       waste: Object.values(groupedWaste),
       fleet: Object.values(groupedFleet),
-      leaderboard: rawData?.leaderboard || []
+      leaderboard: rawData?.leaderboard || [],
+      yoy: comparison,
+      improvement
     };
   }, [rawData]);
+
+  const [reportData, setReportData] = useState<any>(null);
 
   const generateAIReport = async () => {
     try {
       setGenerating(true);
       setShowModal(true);
-      await new Promise(r => setTimeout(r, 4000));
-      setAiReport(`### Circular Economy Executive Report - ${filter.toUpperCase()}\n\n**Total Waste Management:** Handling **${kpis.totalWaste}kg** with **${kpis.recyclingRate}%** recovery. **${kpis.activeCitizens}** active participants. Carbon offset: **${kpis.co2Saved}kg**.`);
+      
+      // Get a ward_id (for now we use the first one we find or a default)
+      const { data: wards } = await supabase.from('wards').select('id').limit(1);
+      const wardId = wards?.[0]?.id;
+      
+      if (!wardId) throw new Error("No wards found to generate report.");
+
+      const { data, error } = await supabase.functions.invoke('generate-ward-report', {
+        body: { ward_id: wardId }
+      });
+
+      if (error) throw error;
+      setReportData(data);
+    } catch (err: any) {
+      alert("Error generating report: " + err.message);
+      setShowModal(false);
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handlePrint = () => {
+    if (!reportData) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Simple SVG Sparkline
+    const generateSparkline = (data: any[]) => {
+      if (!data.length) return '';
+      const min = Math.min(...data.map(d => d.aqi_value));
+      const max = Math.max(...data.map(d => d.aqi_value));
+      const range = max - min || 1;
+      const width = 200;
+      const height = 40;
+      const points = data.map((d, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((d.aqi_value - min) / range) * height;
+        return `${x},${y}`;
+      }).join(' ');
+
+      return `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+          <polyline points="${points}" fill="none" stroke="#10b981" stroke-width="2" />
+        </svg>
+      `;
+    };
+
+    const reportHTML = `
+      <html>
+        <head>
+          <title>EcoNode Weekly Ward Report - ${reportData.wardName}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; background: white; }
+            .header { border-bottom: 4px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: 900; color: #059669; }
+            .header .ward-seal { width: 60px; height: 60px; background: #f1f5f9; border-radius: 50%; display: flex; items-center; justify-content: center; font-size: 10px; font-weight: bold; color: #94a3b8; border: 2px dashed #cbd5e1; text-align: center; line-height: 1; }
+            .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
+            .summary-box h3 { margin-top: 0; color: #059669; font-size: 14px; text-transform: uppercase; }
+            .summary-box p { font-style: italic; line-height: 1.6; font-size: 15px; }
+            .grid { display: grid; grid-template-cols: 1fr 1fr; gap: 20px; }
+            .card { border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; }
+            .card h4 { margin: 0 0 10px 0; font-size: 12px; color: #64748b; text-transform: uppercase; }
+            .card .value { font-size: 24px; font-weight: 800; }
+            .sparkline-container { margin-top: 10px; }
+            @media print {
+              body { padding: 20px; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>EcoNode: Weekly Ward Report</h1>
+              <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">Ward: <strong>${reportData.wardName}</strong> | Period: ${reportData.period}</p>
+            </div>
+            <div class="ward-seal">WARD<br/>SEAL</div>
+          </div>
+
+          <div class="summary-box">
+            <h3>Executive AI Summary</h3>
+            <p>${reportData.summary}</p>
+          </div>
+
+          <div class="grid">
+            <div class="card">
+              <h4>AQI Performance</h4>
+              <div class="value">${reportData.metrics.aqi.avg} <span style="font-size: 12px; font-weight: normal;">Avg</span></div>
+              <div style="font-size: 12px; color: #64748b;">Peak: ${reportData.metrics.aqi.peak} | Low: ${reportData.metrics.aqi.lowest}</div>
+              <div class="sparkline-container">${generateSparkline(reportData.metrics.aqi.trend)}</div>
+            </div>
+            <div class="card">
+              <h4>Pollution & Health</h4>
+              <div class="value">${reportData.metrics.pollution.topSource}</div>
+              <div style="font-size: 12px; color: #64748b;">Top Source This Week</div>
+              <div style="margin-top:10px; font-size: 14px; font-weight: bold; color: #ef4444;">Est. Health Cost: ₹${(reportData.metrics.impact.healthCostEstimate / 1000).toFixed(1)}k</div>
+            </div>
+            <div class="card">
+              <h4>Waste & Recovery</h4>
+              <div class="value">${reportData.metrics.waste.recyclableRate}%</div>
+              <div style="font-size: 12px; color: #64748b;">Recyclable Material Rate</div>
+              <div style="margin-top:50px; font-size: 12px;">Total Scans: ${reportData.metrics.waste.total}</div>
+            </div>
+            <div class="card">
+              <h4>Citizen Engagement</h4>
+              <div class="value">${reportData.metrics.engagement.avgEcoScore}</div>
+              <div style="font-size: 12px; color: #64748b;">Avg Citizen Eco Score</div>
+              <div style="margin-top:10px; font-size: 12px;">Active Contributors: ${reportData.metrics.engagement.activeCitizens}</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 40px; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; text-align: center;">
+            Generated by EcoNode Urban Neural Metabolism | This is a computer-generated document.
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(reportHTML);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   return (
@@ -119,8 +282,91 @@ export default function Reports() {
               onClick={generateAIReport}
               className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 font-bold px-4 py-1.5 rounded-xl text-sm transition-all shadow-md shadow-emerald-500/10"
             >
-              <FileText size={16} /> Generate AI Report
+              <FileText size={16} /> Generate This Week's Report
             </button>
+          </div>
+        </div>
+
+        {/* Year-over-Year AQI Comparison */}
+        <div className="bg-[var(--bg-secondary)]/30 border border-[var(--border)] rounded-2xl p-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black uppercase text-[var(--text-muted)] tracking-wider">Econode Impact: Year-over-Year AQI Comparison</h3>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Comparison of 7-day rolling averages vs same period last year</p>
+            </div>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-xl text-center">
+              <span className="text-[10px] font-bold text-emerald-500 uppercase block">AQI Improvement</span>
+              <span className="text-2xl font-black text-emerald-400">-{chartsData.improvement}%</span>
+            </div>
+          </div>
+
+          <div className="h-72">
+            {fetching ? <div className="w-full h-full shimmer rounded" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={chartsData.yoy}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="day" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                    cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl shadow-xl">
+                            <p className="text-xs font-bold text-[var(--text-primary)] mb-2">{payload[0].payload.day}</p>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-[10px] text-[var(--text-muted)]">Current Year</span>
+                                <span className="text-sm font-bold text-emerald-400">{payload[0].value}</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-[10px] text-[var(--text-muted)]">Last Year</span>
+                                <span className="text-sm font-bold text-slate-400">{payload[1].value}</span>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-[var(--text-muted)] mt-2 pt-2 border-t border-[var(--border)] leading-tight italic">
+                              Historical data shown for comparative analysis. Improvement attributed to early warning + proactive collection dispatch.
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend verticalAlign="top" align="right" height={36}/>
+                  
+                  {/* Shaded Area for Impact Zone */}
+                  <Area 
+                    type="monotone" 
+                    dataKey="historical" 
+                    stroke="none" 
+                    fill="#10b981" 
+                    fillOpacity={0.05} 
+                    name="Econode Impact Zone"
+                  />
+
+                  <Line 
+                    type="monotone" 
+                    dataKey="historical" 
+                    stroke="#94a3b8" 
+                    strokeWidth={2} 
+                    strokeDasharray="5 5" 
+                    name="Last Year (Baseline)" 
+                    dot={false}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="current" 
+                    stroke="#10b981" 
+                    strokeWidth={3} 
+                    name="Today (Econode)" 
+                    dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -207,7 +453,7 @@ export default function Reports() {
                      <FileText size={18} className="text-emerald-400" /> Executive AI Report
                   </h2>
                    <div className="flex items-center gap-2">
-                    <button onClick={() => window.print()} className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded-lg text-[var(--text-muted)]"><Download size={16} /></button>
+                    <button onClick={handlePrint} className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded-lg text-[var(--text-muted)]"><Download size={16} /></button>
                     <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-[var(--bg-tertiary)] rounded-lg text-[var(--text-muted)]">✕</button>
                   </div>
                </div>
@@ -216,14 +462,43 @@ export default function Reports() {
                     <RefreshCw className="animate-spin text-emerald-400" size={24} />
                     <span>Crunching ledger indices with neural aggregates...</span>
                   </div>
-               ) : (
-                  <div className="prose prose-invert text-sm leading-relaxed text-[var(--text-secondary)]">
-                     {aiReport.split('\n').map((line, i) => (
-                        line.startsWith('###') ? <h3 key={i} className="text-white mt-4 font-black">{line.replace('###', '')}</h3> :
-                        line.startsWith('**') ? <strong key={i} className="block mt-2 text-slate-200">{line}</strong> :
-                        <p key={i} className="mt-1">{line}</p>
-                     ))}
+               ) : reportData ? (
+                  <div className="flex flex-col gap-6">
+                    <div className="bg-[var(--bg-tertiary)] p-4 rounded-xl border border-[var(--border)]">
+                      <h3 className="text-xs font-bold uppercase text-[var(--text-muted)] mb-2">Executive Summary</h3>
+                      <p className="text-sm leading-relaxed text-[var(--text-secondary)] italic">"{reportData.summary}"</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-[var(--bg-tertiary)]/50 p-3 rounded-xl border border-[var(--border)]">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Weekly Avg AQI</span>
+                        <p className="text-xl font-black text-emerald-400">{reportData.metrics.aqi.avg}</p>
+                      </div>
+                      <div className="bg-[var(--bg-tertiary)]/50 p-3 rounded-xl border border-[var(--border)]">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Peak Exposure</span>
+                        <p className="text-xl font-black text-amber-400">{reportData.metrics.aqi.peak}</p>
+                      </div>
+                      <div className="bg-[var(--bg-tertiary)]/50 p-3 rounded-xl border border-[var(--border)]">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Recycling Rate</span>
+                        <p className="text-xl font-black text-blue-400">{reportData.metrics.waste.recyclableRate}%</p>
+                      </div>
+                      <div className="bg-[var(--bg-tertiary)]/50 p-3 rounded-xl border border-[var(--border)]">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Policy Approvals</span>
+                        <p className="text-xl font-black text-purple-400">{reportData.metrics.policies.approved}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-col gap-2">
+                       <button 
+                        onClick={handlePrint}
+                        className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 font-bold py-3 rounded-xl text-white transition-all shadow-lg shadow-emerald-500/20"
+                       >
+                         <Download size={18} /> Download Printable PDF
+                       </button>
+                    </div>
                   </div>
+               ) : (
+                  <div className="text-center py-10 text-[var(--text-muted)]">Failed to load report data.</div>
                )}
             </div>
           </div>
