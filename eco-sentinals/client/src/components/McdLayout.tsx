@@ -1,12 +1,13 @@
 import { ReactNode, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Map, Truck, ShieldAlert, BarChart3, Eye, Menu, X, Sun, Moon, TreePine } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, Map, Truck, ShieldAlert, BarChart3, Eye, Menu, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import Logo from './Logo';
+import ThemeSwitcher from './ThemeSwitcher';
 
 export default function McdLayout({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  useTheme();
 
   const navItems = [
     { label: 'Dashboard', path: '/mcd/dashboard', icon: LayoutDashboard },
@@ -30,10 +31,7 @@ export default function McdLayout({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <div className={`w-64 bg-[var(--bg-secondary)] p-4 border-r border-[var(--border)] flex flex-col fixed md:static inset-y-0 left-0 z-[1100] transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-200 ease-in-out`}>
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded bg-emerald-500"></div>
-            <span className="text-xl font-bold tracking-tight text-[var(--citizen-primary)]">Econode</span>
-          </div>
+          <Logo showText />
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
              <X size={20} />
           </button>
@@ -89,31 +87,6 @@ export default function McdLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Theme Toggle */}
-            <div className="flex items-center bg-[var(--bg-tertiary)] rounded-full p-1 border border-[var(--border)]">
-              <button 
-                onClick={() => setTheme('light')}
-                className={`p-1.5 rounded-full transition-all ${theme === 'light' ? 'bg-[var(--bg-secondary)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
-                title="Light Theme"
-              >
-                <Sun size={14} />
-              </button>
-              <button 
-                onClick={() => setTheme('dark')}
-                className={`p-1.5 rounded-full transition-all ${theme === 'dark' ? 'bg-[var(--bg-secondary)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
-                title="Dark Theme"
-              >
-                <Moon size={14} />
-              </button>
-              <button 
-                onClick={() => setTheme('civic')}
-                className={`p-1.5 rounded-full transition-all ${theme === 'civic' ? 'bg-[var(--bg-secondary)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
-                title="Civic Green"
-              >
-                <TreePine size={14} />
-              </button>
-            </div>
-
             <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)]">
               <BarChart3 size={16} />
             </div>
@@ -122,6 +95,7 @@ export default function McdLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-y-auto w-full">
           {children}
         </main>
+        <ThemeSwitcher />
       </div>
     </div>
   );

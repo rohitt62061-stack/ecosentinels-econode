@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MCD Civic Editorial - Citizen Waste Scan</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&amp;family=DM+Sans:ital,opsz,wght@0,100..1000;1,100..1000&amp;family=Geist+Mono:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#dde4e1",
+              "tertiary": "#431a00",
+              "secondary-fixed": "#d7e2ff",
+              "primary-fixed": "#c1ecd4",
+              "on-error-container": "#93000a",
+              "surface": "#f4fbf8",
+              "on-secondary-fixed-variant": "#2d4773",
+              "surface-container": "#e8efec",
+              "on-secondary-container": "#3b5481",
+              "tertiary-fixed-dim": "#ffb68e",
+              "inverse-primary": "#a5d0b9",
+              "surface-container-lowest": "#ffffff",
+              "primary": "#012d1d",
+              "secondary": "#465e8c",
+              "tertiary-container": "#652a00",
+              "surface-container-low": "#eef5f2",
+              "primary-container": "#1b4332",
+              "on-surface": "#161d1b",
+              "on-primary-container": "#86af99",
+              "on-tertiary-fixed-variant": "#763300",
+              "on-error": "#ffffff",
+              "on-primary-fixed-variant": "#274e3d",
+              "outline-variant": "#c1c8c2",
+              "secondary-container": "#b1cafd",
+              "on-surface-variant": "#414844",
+              "surface-container-high": "#e3eae7",
+              "inverse-surface": "#2b3230",
+              "on-tertiary": "#ffffff",
+              "primary-fixed-dim": "#a5d0b9",
+              "error": "#ba1a1a",
+              "on-secondary": "#ffffff",
+              "background": "#f4fbf8",
+              "tertiary-fixed": "#ffdbca",
+              "on-background": "#161d1b",
+              "surface-container-highest": "#dde4e1",
+              "surface-bright": "#f4fbf8",
+              "surface-tint": "#3f6653",
+              "on-secondary-fixed": "#001b3f",
+              "on-tertiary-fixed": "#331200",
+              "on-tertiary-container": "#f98740",
+              "on-primary-fixed": "#002114",
+              "surface-dim": "#d4dcd9",
+              "inverse-on-surface": "#ebf2ef",
+              "error-container": "#ffdad6",
+              "outline": "#717973",
+              "on-primary": "#ffffff",
+              "secondary-fixed-dim": "#aec7fb"
+            },
+            fontFamily: {
+              "serif": ["Fraunces", "serif"],
+              "sans": ["DM Sans", "sans-serif"],
+              "mono": ["Geist Mono", "monospace"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        .editorial-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+        /* Custom scrollbar to match editorial feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f4fbf8; }
+        ::-webkit-scrollbar-thumb { background: #1B4332; border-radius: 10px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-sans text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#f4fbf8] dark:bg-[#012d1d] flex justify-between items-center w-full px-6 py-4 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#1B4332] dark:text-[#C1ECD4] cursor-pointer" data-icon="menu">menu</span>
+<h1 class="text-xl font-bold font-serif text-[#1B4332] dark:text-[#C1ECD4]">MCD Civic Editorial</h1>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-8">
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase text-[#1B4332]/60 cursor-pointer hover:text-[#012d1d]">Home</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase text-[#012d1d] font-bold border-b-2 border-[#012d1d] pb-1 cursor-pointer">Scan</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase text-[#1B4332]/60 cursor-pointer hover:text-[#012d1d]">Score</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase text-[#1B4332]/60 cursor-pointer hover:text-[#012d1d]">Profile</span>
+</nav>
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden border-2 border-primary-container">
+<img alt="MCD Official Seal" data-alt="Official gold embossed circular seal of the Municipal Corporation of Delhi on a deep green background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHmjr6Y2OlX_YHImBg1fzkMba_af3b1ipjnngUwEMzNN8Zaqn9NUoOjzezECCfJsPnDV0MGPT_CKwgxYWiCERlIjrONKFJ9nJQMORI-VjSLbQYDic2zkPR20GdcSciRR7omBlcvDV_5pkj8mQIp3CfLkiS3ctHIMI_rf-IXK92U2UOZzUNnEB6OGgvupJAbze7lAt28-1EvtDCgxoElgaqOMQhOYbbv1mLBoDl69_PjDzBHImVuzyXCz2iPhMnKYJRLimQClNqCDA"/>
+</div>
+</div>
+</header>
+<main class="max-w-5xl mx-auto px-6 pt-8">
+<!-- Hero Section / Context -->
+<div class="mb-12">
+<p class="font-mono text-label-sm text-tertiary uppercase tracking-widest mb-2">CIVIC PROTOCOL 07</p>
+<h2 class="font-serif text-display-lg leading-tight text-primary">Citizen Waste Scan</h2>
+<p class="text-on-surface-variant max-w-xl mt-4 font-sans italic">Identify materials instantly using the civic neural engine. Earn points for responsible disposal.</p>
+</div>
+<div class="editorial-grid">
+<!-- Left Column: Camera Upload Zone -->
+<div class="col-span-12 lg:col-span-7">
+<div class="relative group">
+<div class="aspect-[4/3] rounded-full bg-surface-container border-4 border-dashed border-primary/20 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all duration-300 overflow-hidden relative">
+<!-- Decorative Map/Glass background -->
+<div class="absolute inset-0 opacity-10 grayscale pointer-events-none">
+<img class="w-full h-full object-cover" data-alt="Atmospheric aerial drone shot of New Delhi residential blocks with lush green trees and structured urban layout" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-rI-xITJZ2jp19sgyIm4CRzXcUkj67OBSopJ75jozAXD1a78EsBEOke9KjBcYp--IAh2FIF5l8u_YRrFjhmj2l55-vhTI5FKguYmEOxDKbyyv4r96v6TxH-7QmxBjcGatnVyzOTYGHs235PLiBiMb0WRhsXvEtyo2k2vvCAz5YubAevrvrPTOR7eP5HCD1jch1q6bo3XHTba7IVGNR3xXf3bCF2A_tZfXCcKjVVyTa8vS0XvsUb7zprypUwoZeZGXeyZlXMAnuZA"/>
+</div>
+<div class="relative z-10 flex flex-col items-center">
+<div class="w-24 h-24 rounded-full bg-primary-container flex items-center justify-center text-white mb-6 shadow-xl transform group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined !text-4xl" data-icon="center_focus_weak">center_focus_weak</span>
+</div>
+<p class="font-serif text-headline-md text-primary">Capture Object</p>
+<p class="font-sans text-body-md text-on-surface-variant mt-2">Align the item within the frame</p>
+</div>
+<!-- +10 Pts Badge (Score Animation Placeholder) -->
+<div class="absolute top-12 right-12 bg-tertiary-fixed text-on-tertiary-fixed px-4 py-2 rounded-full font-mono text-sm font-bold shadow-lg flex items-center gap-2 animate-bounce">
+<span class="material-symbols-outlined !text-sm" data-icon="stars">stars</span>
+                            +10 PTS
+                        </div>
+</div>
+</div>
+</div>
+<!-- Right Column: Results & Analytics -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-6">
+<!-- Analysis Card -->
+<div class="bg-surface-container-lowest rounded-full p-8 shadow-[0px_12px_32px_rgba(15,41,34,0.06)] relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed/20 rounded-bl-full -mr-8 -mt-8"></div>
+<div class="flex items-start justify-between mb-8">
+<div>
+<span class="font-mono text-label-sm text-primary/60 block mb-1">SCAN SUCCESS</span>
+<h3 class="font-serif text-headline-md text-primary">Analysis Complete</h3>
+</div>
+<div class="text-4xl">🧴</div>
+</div>
+<div class="inline-flex items-center gap-2 bg-primary-container text-white px-4 py-1 rounded-lg text-sm font-sans mb-6">
+<span class="material-symbols-outlined !text-sm" data-icon="recycling">recycling</span>
+                        Recyclable - Plastic
+                    </div>
+<div class="space-y-4">
+<div class="p-4 bg-surface-container-low rounded-xl">
+<p class="font-mono text-label-sm text-tertiary uppercase mb-2">Disposal Tip</p>
+<p class="font-sans text-body-md text-on-surface italic">'Rinse and place in the blue bin'</p>
+</div>
+<div class="flex justify-between items-end border-t border-outline-variant/20 pt-4">
+<div>
+<p class="font-sans text-body-md text-on-surface-variant">Carbon Offset</p>
+<p class="font-mono text-xl font-bold text-primary">0.42 kg CO2</p>
+</div>
+<button class="bg-primary text-white font-sans font-medium px-6 py-2 rounded-md hover:bg-primary/90 transition-colors">
+                                Log Disposal
+                            </button>
+</div>
+</div>
+</div>
+<!-- Secondary Metric Card -->
+<div class="bg-primary-container text-on-primary-container rounded-full p-8 relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined !text-[120px]" data-icon="analytics">analytics</span>
+</div>
+<p class="font-serif text-title-md text-on-primary-fixed">Weekly Civic Impact</p>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="font-mono text-4xl font-bold text-white">124</span>
+<span class="font-sans text-sm opacity-80 uppercase tracking-widest">Points Earned</span>
+</div>
+<div class="w-full h-1 bg-white/20 mt-6 rounded-full overflow-hidden">
+<div class="w-[65%] h-full bg-primary-fixed"></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#f4fbf8]/80 dark:bg-[#012d1d]/80 backdrop-blur-xl shadow-[0px_-12px_32px_rgba(15,41,34,0.06)] md:hidden">
+<div class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#1B4332] text-[#ffffff] rounded-xl px-4 py-1.5 cursor-pointer transform active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="center_focus_weak">center_focus_weak</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Scan</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Score</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Profile</span>
+</div>
+</nav>
+<!-- Navigation Drawer (Desktop Hidden by default, showing structure) -->
+<div class="hidden lg:flex fixed inset-y-0 left-0 z-[60] flex flex-col py-8 h-full w-20 bg-[#eef5f2] dark:bg-[#0f2922] shadow-xl items-center gap-8 border-r border-outline-variant/10">
+<div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white mb-4">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+</div>
+<div class="flex flex-col gap-8 text-[#1B4332] dark:text-[#C1ECD4]">
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors" data-icon="map">map</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors" data-icon="policy">policy</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-primary transition-colors" data-icon="assessment">assessment</span>
+</div>
+</div>
+</body></html>

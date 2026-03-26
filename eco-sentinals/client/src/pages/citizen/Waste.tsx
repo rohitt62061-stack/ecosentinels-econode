@@ -1,17 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import CitizenLayout from '../../components/CitizenLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Camera, RefreshCw, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { Camera, Sparkles, X, Search, Zap } from 'lucide-react';
+import { algoliasearch } from 'algoliasearch';
+
+const algoliaClient = algoliasearch(
+  import.meta.env.VITE_ALGOLIA_APP_ID,
+  import.meta.env.VITE_ALGOLIA_SEARCH_KEY
+);
+
+interface Classification {
+  category: string;
+  item_name: string;
+  disposal_tip: string;
+  points?: number;
+}
+
+interface AlgoliaHit {
+  objectID: string;
+  name: string;
+  category: string;
+  tip: string;
+}
 
 export default function Waste() {
   const { session } = useAuth();
   const [image, setImage] = useState<string | null>(null);
   const [itemName, setItemName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any | null>(null);
-  const [error, setError] = useState('');
+  const [result, setResult] = useState<Classification | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [showPoints, setShowPoints] = useState(false);
+  
+  // Algolia State
+  const [suggestions, setSuggestions] = useState<AlgoliaHit[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -20,22 +45,90 @@ export default function Waste() {
     const reader = new FileReader();
     reader.onloadend = () => {
       setImage(reader.result as string);
-      setResult(null); // Clear previous result
+      setResult(null);
     };
     reader.readAsDataURL(file);
   };
 
+  // Debounced Algolia Search
+  useEffect(() => {
+    if (itemName.length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const { results } = await algoliaClient.search({
+          requests: [{
+            indexName: 'waste-items',
+            query: itemName,
+            hitsPerPage: 5
+          }]
+        });
+        
+        const hits = (results[0] as any).hits as AlgoliaHit[];
+        setSuggestions(hits);
+        setShowDropdown(hits.length > 0);
+      } catch (err) {
+        console.error('Algolia search error:', err);
+      }
+    }, 150);
+
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, [itemName]);
+
+  const selectSuggestion = (hit: AlgoliaHit) => {
+    setItemName(hit.name);
+    setResult({
+      category: hit.category,
+      item_name: hit.name,
+      disposal_tip: hit.tip
+    });
+    setSuggestions([]);
+    setShowDropdown(false);
+    setTimeout(() => setShowPoints(true), 300);
+  };
+
   const classifyWaste = async () => {
     if (!image && !itemName) return;
-    
     setLoading(true);
-    setError('');
+    setError(null);
     setShowPoints(false);
 
     try {
-      // Fetch user's ward_id from a scoring or profile table setup 
+      // 1. Check Algolia first if we have a name but no result yet
+      if (itemName && !result) {
+        const { results } = await algoliaClient.search({
+          requests: [{
+            indexName: 'waste-items',
+            query: itemName,
+            hitsPerPage: 1
+          }]
+        });
+        const hit = (results[0] as any).hits[0] as AlgoliaHit;
+        
+        // Exact or very close match
+        if (hit && hit.name.toLowerCase() === itemName.toLowerCase()) {
+          setResult({
+            category: hit.category,
+            item_name: hit.name,
+            disposal_tip: hit.tip
+          });
+          setTimeout(() => setShowPoints(true), 300);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2. Fall back to Claude API (Supabase Function)
       const { data: scoreData } = await supabase.from('citizen_scores').select('ward_id').eq('user_id', session?.user?.id).maybeSingle();
-      const ward_id = scoreData?.ward_id || "662ae969-067a-4b6b-a0b3-ac28cc665fe9"; // Fallback static ID if profile missing
+      const ward_id = scoreData?.ward_id || "662ae969-067a-4b6b-a0b3-ac28cc665fe9";
 
       const { data, error: invokeError } = await supabase.functions.invoke('classify-waste', {
         body: {
@@ -64,127 +157,170 @@ export default function Waste() {
     setImage(null);
     setItemName('');
     setResult(null);
-    setError('');
+    setError(null);
     setShowPoints(false);
   };
 
   const getCategoryTheme = (cat: string) => {
     const lower = (cat || '').toLowerCase();
-    if (lower.includes('biodegradable')) return { bg: 'bg-green-500/10 border-green-500/20', text: 'text-green-500', emoji: '🌱', label: 'Biodegradable' };
-    if (lower.includes('recyclable')) return { bg: 'bg-blue-500/10 border-blue-500/20', text: 'text-blue-500', emoji: '♻️', label: 'Recyclable' };
-    return { bg: 'bg-red-500/10 border-red-500/20', text: 'text-red-500', emoji: '☣️', label: 'Hazardous' };
+    if (lower.includes('biodegradable')) return { color: '#059669', emoji: '🌱', label: 'Biodegradable' };
+    if (lower.includes('recyclable')) return { color: '#2563eb', emoji: '♻️', label: 'Recyclable' };
+    return { color: '#dc2626', emoji: '☣️', label: 'Hazardous' };
   };
 
-  const theme = result ? getCategoryTheme(result.category) : null;
+  const category = result ? getCategoryTheme(result.category) : null;
 
   return (
     <CitizenLayout>
-      <div className="p-4 bg-[var(--bg-primary)] min-h-full text-[var(--text-primary)] flex flex-col gap-4 max-w-md mx-auto relative transition-colors duration-300">
+      <div className="flex flex-col h-full bg-[var(--surface)] text-[var(--text-primary)] transition-colors duration-500 relative">
         
-        <div>
-          <h1 className="text-xl font-bold font-manrope">Waste Classifier</h1>
-          <p className="text-xs text-[var(--citizen-primary)] opacity-80">Snapshot the item or type its name for points</p>
+        {/* Editorial Header Overlaid */}
+        <div className="absolute top-0 inset-x-0 z-20 p-8 flex justify-between items-start pointer-events-none">
+          <div className="pointer-events-auto">
+            <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+              Waste Metabolism
+            </h1>
+            <p className="text-[10px] uppercase font-mono tracking-[0.2em] text-[var(--text-muted)] mt-1">
+              Screen 07: Intelligence Scan
+            </p>
+          </div>
+          <button onClick={reset} className={`pointer-events-auto p-2 rounded-full bg-[var(--surface-container-highest)]/80 backdrop-blur-md transition-opacity duration-300 ${image || result ? 'opacity-100' : 'opacity-0'}`}>
+            <X size={20} />
+          </button>
         </div>
 
-        {!result && !loading && (
-          <div className="flex flex-col gap-3">
-            <label className="border-2 border-dashed border-[var(--border)] rounded-2xl h-52 flex flex-col items-center justify-center gap-2 cursor-pointer bg-[var(--bg-secondary)]/20 hover:border-[var(--citizen-primary)]/40 transition-colors relative overflow-hidden group">
-              <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
-              {image ? (
-                <img src={image} className="absolute inset-0 w-full h-full object-cover rounded-xl" alt="Preview" />
-              ) : (
-                <>
-                  <div className="p-3 bg-[var(--citizen-primary)]/10 rounded-full text-[var(--citizen-primary)]">
-                    <Camera size={24} />
-                  </div>
-                  <span className="text-xs font-semibold text-[var(--text-muted)]">Tap to Scan Item</span>
-                </>
-              )}
-            </label>
-
-            <div className="flex items-center gap-2 text-[var(--text-muted)] opacity-30 text-[10px] uppercase font-bold">
-              <hr className="flex-1 border-[var(--border)]" />
-              <span>OR</span>
-              <hr className="flex-1 border-[var(--border)]" />
+        {/* Scan Area / Viewport */}
+        <div className="flex-1 relative bg-black overflow-hidden m-4 rounded-[var(--radius-lg)] shadow-2xl">
+          {image ? (
+            <img src={image} className="w-full h-full object-cover" alt="Scan preview" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-6 bg-neutral-900 border border-white/10">
+              <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center text-white/40">
+                <Camera size={32} />
+              </div>
+              <p className="text-xs font-mono uppercase tracking-[0.2em] text-white/40">Lens Initializing...</p>
             </div>
+          )}
 
-            <input 
-              type="text" 
-              placeholder="Type item name (e.g. Banana Peel)" 
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              className="bg-[var(--bg-secondary)]/80 border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[var(--citizen-primary)]/50 text-[var(--text-primary)] placeholder-[var(--text-muted)]/50"
-            />
+          {/* Scanning Animation */}
+          {loading && (
+            <div className="absolute inset-0 z-10 pointer-events-none">
+              <div className="w-full h-[2px] bg-[var(--primary)] absolute top-0 animate-[scan_2s_infinite_linear] opacity-60 blur-sm shadow-[0_0_15px_var(--primary)]"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--primary-container)]/5 to-transparent animate-pulse"></div>
+            </div>
+          )}
+          
+          <style>{`
+            @keyframes scan {
+              0% { top: 0%; }
+              50% { top: 100%; }
+              100% { top: 0%; }
+            }
+          `}</style>
+        </div>
 
-            <button 
-              onClick={classifyWaste}
-              disabled={!image && !itemName}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all shadow-lg ${
-                (!image && !itemName) 
-                  ? 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed' 
-                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/10'
-              }`}
-            >
-              Classify Waste
-            </button>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3">
-            <RefreshCw size={32} className="animate-spin text-[var(--citizen-primary)]" />
-            <p className="text-sm font-bold text-[var(--text-secondary)] animate-pulse">Asking AI Classification...</p>
-          </div>
-        )}
-
-        {/* Result Card */}
-        {result && theme && (
-          <div className="flex flex-col gap-4 animate-fadeIn">
-            <div className={`border rounded-2xl p-5 flex flex-col items-center text-center gap-3 bg-[var(--bg-secondary)]/30 ${theme.bg}`}>
-              <span className="text-5xl">{theme.emoji}</span>
-              <div>
-                <h3 className="font-black text-[var(--text-primary)] text-lg capitalize">{result.item_name || itemName}</h3>
-                <span className={`px-2 py-0.5 text-xs font-bold rounded-md uppercase border inline-block mt-1 ${theme.text} border-current/20`}>
-                  {theme.label}
-                </span>
+        {/* Controls Panel - Glassmorphism */}
+        <div className="p-8 pb-32 flex flex-col gap-6 relative z-10">
+          {!result && !loading && (
+            <div className="flex flex-col gap-4 animate-editorial-fade relative">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Declare item manually..." 
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  onFocus={() => itemName.length >= 2 && setSuggestions.length > 0 && setShowDropdown(true)}
+                  className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] rounded-[var(--radius-md)] px-6 py-4 text-sm font-medium outline-none focus:border-[var(--primary)]/50 text-[var(--text-primary)] transition-all"
+                />
+                
+                {/* Algolia Dropdown */}
+                {showDropdown && suggestions.length > 0 && (
+                  <div className="absolute bottom-full mb-2 left-0 right-0 bg-[var(--surface-container-high)]/90 backdrop-blur-xl border border-[var(--outline-variant)] rounded-[var(--radius-md)] shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="p-3 border-b border-[var(--outline-variant)] flex items-center gap-2">
+                      <Zap size={12} className="text-amber-500 fill-amber-500" />
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--text-muted)]">Instant Matches</span>
+                    </div>
+                    {suggestions.map((hit) => (
+                      <button
+                        key={hit.objectID}
+                        onClick={() => selectSuggestion(hit)}
+                        className="w-full px-6 py-4 text-left hover:bg-[var(--primary)]/10 flex items-center justify-between group transition-colors border-b border-[var(--outline-variant)] last:border-0"
+                      >
+                        <span className="text-sm font-semibold">{hit.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[var(--surface-container-highest)] group-hover:bg-[var(--primary)]/20 text-[var(--text-secondary)]">
+                            {hit.category}
+                          </span>
+                          <Search size={14} className="text-[var(--text-muted)]" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               
-              <div className="w-full h-[1px] bg-[var(--border)]" />
-
-              <div className="text-left w-full">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Disposal Tip</p>
-                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">{result.disposal_tip}</p>
+              <div className="flex gap-4">
+                <label className="flex-1 flex items-center justify-center gap-3 py-4 bg-[var(--surface-container-highest)] text-[var(--primary)] rounded-[var(--radius-md)] text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-[var(--primary)] hover:text-white transition-all duration-300">
+                  <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
+                  <Camera size={16} />
+                  Capture
+                </label>
+                
+                <button 
+                  onClick={classifyWaste}
+                  disabled={!image && !itemName}
+                  className="flex-[2] py-4 text-xs font-bold uppercase tracking-widest text-white rounded-[var(--radius-md)] transition-all duration-500 disabled:opacity-20 flex items-center justify-center gap-2 group"
+                  style={{ background: 'linear-gradient(145deg, var(--primary-container), var(--primary))' }}
+                >
+                  <Sparkles size={16} className="group-hover:rotate-12 transition-transform" />
+                  Metabolize Data
+                </button>
               </div>
+            </div>
+          )}
 
-              {showPoints && (
-                <div className="mt-2 flex items-center gap-1 bg-amber-500/20 px-3 py-1.5 rounded-full border border-amber-500/20 animate-bounce">
-                  <Sparkles size={14} className="text-amber-400" />
-                  <span className="text-xs font-black text-amber-400">+10 Credits Earned!</span>
+          {/* AI Result Card - Editorial Style */}
+          {result && category && (
+            <div className="animate-editorial-fade flex flex-col gap-6">
+              <div className="bg-[var(--surface-container-lowest)] rounded-[var(--radius-lg)] p-6 shadow-[var(--shadow-ambient)] relative overflow-hidden">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="text-4xl">{category.emoji}</div>
+                  <div>
+                    <h3 className="text-xl font-bold tracking-tight capitalize" style={{ fontFamily: 'var(--font-display)' }}>
+                      {result.item_name}
+                    </h3>
+                    <span 
+                      className="text-[10px] font-mono font-bold uppercase tracking-widest"
+                      style={{ color: category.color }}
+                    >
+                      Class: {category.label}
+                    </span>
+                  </div>
                 </div>
-              )}
+                
+                <div className="p-4 rounded-[var(--radius-md)] bg-[var(--surface-container-low)]">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-muted)] block mb-1">
+                    Disposal Protocol
+                  </span>
+                  <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                    {result.disposal_tip}
+                  </p>
+                </div>
+
+                {showPoints && (
+                  <div className="mt-4 flex items-center gap-2 text-amber-600 font-bold text-xs animate-bounce">
+                    <Sparkles size={14} /> +10 Credits toward EcoScore
+                  </div>
+                )}
+              </div>
+              
+              <button onClick={reset} className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors self-center">
+                Initialize New Scan
+              </button>
             </div>
-
-            <button 
-              onClick={reset}
-              className="w-full py-2.5 bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-secondary)] rounded-xl text-sm font-semibold hover:bg-[var(--bg-tertiary)] transition-colors"
-            >
-              Scan Another Item
-            </button>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="border border-red-900/50 bg-red-950/20 p-4 rounded-xl flex items-start gap-2">
-            <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
-            <div>
-              <p className="text-xs font-bold text-red-500">Classification Error</p>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">{error}</p>
-            </div>
-          </div>
-        )}
-
+          )}
+          {error && <div className="text-rose-600 text-xs font-mono text-center">{error}</div>}
+        </div>
       </div>
     </CitizenLayout>
   );

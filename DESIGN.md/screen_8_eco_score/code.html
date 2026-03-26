@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Citizen Eco Score — MCD Civic Editorial</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&amp;family=DM+Sans:wght@400;500;700&amp;family=Geist+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#dde4e1",
+              "tertiary": "#431a00",
+              "secondary-fixed": "#d7e2ff",
+              "primary-fixed": "#c1ecd4",
+              "on-error-container": "#93000a",
+              "surface": "#f4fbf8",
+              "on-secondary-fixed-variant": "#2d4773",
+              "surface-container": "#e8efec",
+              "on-secondary-container": "#3b5481",
+              "tertiary-fixed-dim": "#ffb68e",
+              "inverse-primary": "#a5d0b9",
+              "surface-container-lowest": "#ffffff",
+              "primary": "#012d1d",
+              "secondary": "#465e8c",
+              "tertiary-container": "#652a00",
+              "surface-container-low": "#eef5f2",
+              "primary-container": "#1b4332",
+              "on-surface": "#161d1b",
+              "on-primary-container": "#86af99",
+              "on-tertiary-fixed-variant": "#763300",
+              "on-error": "#ffffff",
+              "on-primary-fixed-variant": "#274e3d",
+              "outline-variant": "#c1c8c2",
+              "secondary-container": "#b1cafd",
+              "on-surface-variant": "#414844",
+              "surface-container-high": "#e3eae7",
+              "inverse-surface": "#2b3230",
+              "on-tertiary": "#ffffff",
+              "primary-fixed-dim": "#a5d0b9",
+              "error": "#ba1a1a",
+              "on-secondary": "#ffffff",
+              "background": "#f4fbf8",
+              "tertiary-fixed": "#ffdbca",
+              "on-background": "#161d1b",
+              "surface-container-highest": "#dde4e1",
+              "surface-bright": "#f4fbf8",
+              "surface-tint": "#3f6653",
+              "on-secondary-fixed": "#001b3f",
+              "on-tertiary-fixed": "#331200",
+              "on-tertiary-container": "#f98740",
+              "on-primary-fixed": "#002114",
+              "surface-dim": "#d4dcd9",
+              "inverse-on-surface": "#ebf2ef",
+              "error-container": "#ffdad6",
+              "outline": "#717973",
+              "on-primary": "#ffffff",
+              "secondary-fixed-dim": "#aec7fb"
+            },
+            fontFamily: {
+              "serif": ["Fraunces", "serif"],
+              "sans": ["DM Sans", "sans-serif"],
+              "mono": ["Geist Mono", "monospace"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .font-serif { font-family: 'Fraunces', serif; }
+      .font-sans { font-family: 'DM Sans', sans-serif; }
+      .font-mono { font-family: 'Geist Mono', monospace; }
+      
+      .circular-progress {
+        background: conic-gradient(var(--tw-primary-container) 85%, var(--tw-surface-container-high) 0deg);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-sans antialiased min-h-screen pb-24">
+<!-- Top App Bar -->
+<header class="bg-[#f4fbf8] dark:bg-[#012d1d] flex justify-between items-center w-full px-6 py-4 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#1B4332] dark:text-[#C1ECD4]">menu</span>
+<h1 class="text-xl font-bold font-serif text-[#1B4332] dark:text-[#C1ECD4] tracking-tight">MCD Civic Editorial</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary-container/20">
+<img alt="MCD Official Seal" class="w-full h-full object-cover" data-alt="Official gold embossed seal of the Municipal Corporation of Delhi with intricate patterns and historical typography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfC814MG8dzf-8-VxSYnwEDhs_Yjc_aIPblUChIYdaUiNaD7JjkqlHazoSkoCN8Atx0GD6aiMkIoh_N_14EB3oOcivaKoEXOjWyjLmWLuCj65myb6n9-WPp38Z7FPBo6_cG_kTAVrpRpPugFeOH6obSU_pyDb34spbexLNvL5Uh1WKd1SFVbPW2DfHHsjqOTCCsTb0ixAhiFlZW0gHX3YqQQfI_HIaMNPkaSdIUyC1Ez-KyqCiCbj7orNb9BydgjV8Pw4ytRpRKnQ"/>
+</div>
+</header>
+<main class="max-w-4xl mx-auto px-6 py-8 space-y-12">
+<!-- Hero Score Section -->
+<section class="flex flex-col items-center justify-center text-center py-6">
+<div class="relative w-64 h-64 flex items-center justify-center">
+<!-- Outer Ring (Tonal Shift) -->
+<div class="absolute inset-0 rounded-full border-[12px] border-surface-container-high"></div>
+<!-- Progress Ring -->
+<svg class="absolute inset-0 w-full h-full -rotate-90">
+<circle class="text-primary-container" cx="128" cy="128" fill="transparent" r="116" stroke="currentColor" stroke-dasharray="728" stroke-dashoffset="109" stroke-width="12"></circle>
+</svg>
+<!-- Inner Glass Core -->
+<div class="relative z-10 bg-surface-container-lowest/70 backdrop-blur-xl w-48 h-48 rounded-full flex flex-col items-center justify-center shadow-[0px_12px_32px_rgba(15,41,34,0.06)]">
+<span class="text-label-sm font-mono text-on-surface-variant tracking-[0.2em] uppercase">Eco Score</span>
+<span class="text-7xl font-serif font-bold text-primary mt-1">850</span>
+<span class="text-xs font-sans font-medium text-primary-container bg-primary-fixed px-3 py-1 rounded-full mt-2">Level: Magistrate</span>
+</div>
+</div>
+<p class="mt-8 font-serif text-xl font-semibold text-primary">Your impact is shaping Delhi's skyline.</p>
+</section>
+<!-- Formula Card (Organic Brutalism) -->
+<section class="relative">
+<div class="bg-primary-container p-1 rounded-xl shadow-xl">
+<div class="bg-primary-container bg-gradient-to-br from-primary-container to-primary px-8 py-10 rounded-lg flex flex-col items-center text-center">
+<h3 class="font-serif text-on-primary-container text-sm uppercase tracking-widest mb-6">The Integrity Algorithm</h3>
+<div class="font-mono text-xl md:text-2xl text-white tracking-tight leading-relaxed">
+                        Score = (Correct ÷ Total) × 100 × <span class="text-tertiary-fixed">Streak Bonus</span>
+</div>
+<div class="mt-6 h-1 w-24 bg-tertiary-fixed-dim/30 rounded-full"></div>
+<p class="mt-6 font-sans text-on-primary-container text-xs max-w-md opacity-80">
+                        Calculated daily based on civic reporting accuracy, ward participation frequency, and consistent reporting streaks.
+                    </p>
+</div>
+</div>
+</section>
+<!-- Badge Grid (Editorial Layout) -->
+<section class="space-y-6">
+<div class="flex items-end justify-between border-b-2 border-surface-container-high pb-4">
+<h2 class="font-serif text-2xl font-semibold text-primary">Civic Honors</h2>
+<span class="font-sans text-sm text-on-surface-variant">3 / 6 Collected</span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-8 pt-4">
+<!-- Earned Badge 1 -->
+<div class="flex flex-col items-center group">
+<div class="w-24 h-24 rounded-full bg-tertiary-fixed flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-105 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-tr from-tertiary/10 to-transparent"></div>
+<span class="material-symbols-outlined text-4xl text-on-tertiary-fixed" data-icon="delete_sweep">delete_sweep</span>
+</div>
+<span class="mt-4 font-serif font-semibold text-primary">Waste Warrior</span>
+<span class="text-[10px] font-mono text-tertiary uppercase tracking-wider">Earned Nov '23</span>
+</div>
+<!-- Earned Badge 2 -->
+<div class="flex flex-col items-center group">
+<div class="w-24 h-24 rounded-full bg-primary-fixed flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-105 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent"></div>
+<span class="material-symbols-outlined text-4xl text-on-primary-fixed" data-icon="air">air</span>
+</div>
+<span class="mt-4 font-serif font-semibold text-primary">Clean Air Hero</span>
+<span class="text-[10px] font-mono text-on-primary-fixed-variant uppercase tracking-wider">Earned Dec '23</span>
+</div>
+<!-- Earned Badge 3 -->
+<div class="flex flex-col items-center group">
+<div class="w-24 h-24 rounded-full bg-secondary-container flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-105 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-tr from-secondary/10 to-transparent"></div>
+<span class="material-symbols-outlined text-4xl text-on-secondary-container" data-icon="water_drop">water_drop</span>
+</div>
+<span class="mt-4 font-serif font-semibold text-primary">Aqua Guardian</span>
+<span class="text-[10px] font-mono text-on-secondary-fixed-variant uppercase tracking-wider">Earned Jan '24</span>
+</div>
+<!-- Locked Badge 4 -->
+<div class="flex flex-col items-center opacity-40 grayscale">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center border-2 border-dashed border-outline-variant relative">
+<span class="material-symbols-outlined text-3xl text-outline" data-icon="energy_savings_leaf">energy_savings_leaf</span>
+<div class="absolute bottom-0 right-0 bg-surface-container-highest p-1 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-xs" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+</div>
+<span class="mt-4 font-serif font-semibold text-on-surface-variant">Power Saver</span>
+</div>
+<!-- Locked Badge 5 -->
+<div class="flex flex-col items-center opacity-40 grayscale">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center border-2 border-dashed border-outline-variant relative">
+<span class="material-symbols-outlined text-3xl text-outline" data-icon="park">park</span>
+<div class="absolute bottom-0 right-0 bg-surface-container-highest p-1 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-xs" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+</div>
+<span class="mt-4 font-serif font-semibold text-on-surface-variant">Green Lung</span>
+</div>
+<!-- Locked Badge 6 -->
+<div class="flex flex-col items-center opacity-40 grayscale">
+<div class="w-24 h-24 rounded-full bg-surface-container flex items-center justify-center border-2 border-dashed border-outline-variant relative">
+<span class="material-symbols-outlined text-3xl text-outline" data-icon="recyle">recycling</span>
+<div class="absolute bottom-0 right-0 bg-surface-container-highest p-1 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-xs" data-icon="lock" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+</div>
+<span class="mt-4 font-serif font-semibold text-on-surface-variant">Cycle Master</span>
+</div>
+</div>
+</section>
+<!-- Ward Leaderboard (Tonal Layering) -->
+<section class="bg-surface-container-low rounded-2xl p-8 space-y-6">
+<div class="flex flex-col space-y-1">
+<h2 class="font-serif text-2xl font-semibold text-primary">Ward Leaderboard</h2>
+<p class="text-sm font-sans text-on-surface-variant">Collective civic action by neighborhood</p>
+</div>
+<div class="space-y-3">
+<!-- Rank 1 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm border-l-4 border-tertiary">
+<div class="flex items-center gap-4">
+<span class="font-mono text-xl font-bold text-tertiary">01</span>
+<div>
+<div class="font-serif font-bold text-primary">Ward 12</div>
+<div class="text-[10px] font-sans text-on-surface-variant uppercase tracking-wide">Civil Lines</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono font-bold text-primary">12.5k</span>
+<span class="text-[10px] font-sans text-tertiary font-bold uppercase tracking-tighter">Pts</span>
+</div>
+</div>
+<!-- Rank 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest/50 rounded-xl hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-mono text-xl font-bold text-on-surface-variant">02</span>
+<div>
+<div class="font-serif font-bold text-primary">Ward 45</div>
+<div class="text-[10px] font-sans text-on-surface-variant uppercase tracking-wide">Greater Kailash</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono font-bold text-primary">11.2k</span>
+<span class="text-[10px] font-sans text-on-surface-variant font-medium uppercase tracking-tighter">Pts</span>
+</div>
+</div>
+<!-- Rank 3 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest/50 rounded-xl hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-mono text-xl font-bold text-on-surface-variant">03</span>
+<div>
+<div class="font-serif font-bold text-primary">Ward 08</div>
+<div class="text-[10px] font-sans text-on-surface-variant uppercase tracking-wide">Rohini Sector 7</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono font-bold text-primary">10.8k</span>
+<span class="text-[10px] font-sans text-on-surface-variant font-medium uppercase tracking-tighter">Pts</span>
+</div>
+</div>
+<!-- Rank 4 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest/50 rounded-xl hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-mono text-xl font-bold text-on-surface-variant">04</span>
+<div>
+<div class="font-serif font-bold text-primary">Ward 92</div>
+<div class="text-[10px] font-sans text-on-surface-variant uppercase tracking-wide">Dwarka Phase II</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono font-bold text-primary">9.4k</span>
+<span class="text-[10px] font-sans text-on-surface-variant font-medium uppercase tracking-tighter">Pts</span>
+</div>
+</div>
+<!-- Rank 5 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest/50 rounded-xl hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-4">
+<span class="font-mono text-xl font-bold text-on-surface-variant">05</span>
+<div>
+<div class="font-serif font-bold text-primary">Ward 21</div>
+<div class="text-[10px] font-sans text-on-surface-variant uppercase tracking-wide">Janakpuri West</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono font-bold text-primary">8.9k</span>
+<span class="text-[10px] font-sans text-on-surface-variant font-medium uppercase tracking-tighter">Pts</span>
+</div>
+</div>
+</div>
+<button class="w-full py-4 bg-surface-container-highest rounded-xl font-serif font-bold text-primary hover:bg-primary-fixed transition-colors">
+                View Full City Ranking
+            </button>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#f4fbf8]/80 dark:bg-[#012d1d]/80 backdrop-blur-xl shadow-[0px_-12px_32px_rgba(15,41,34,0.06)] rounded-t-xl border-t border-[#c1c8c2]/20">
+<div class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 hover:text-[#012d1d] dark:hover:text-white transition-colors cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 hover:text-[#012d1d] dark:hover:text-white transition-colors cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="center_focus_weak">center_focus_weak</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase">Scan</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#1B4332] text-[#ffffff] rounded-xl px-4 py-1.5 cursor-default transition-transform active:scale-95">
+<span class="material-symbols-outlined mb-0.5" data-icon="analytics" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase">Score</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 hover:text-[#012d1d] dark:hover:text-white transition-colors cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase">Profile</span>
+</div>
+</nav>
+</body></html>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import CitizenLayout from '../../components/CitizenLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useAuthGuardedQuery } from '../../hooks/useAuthGuardedQuery';
 import { Heart, Activity, ShieldCheck, RefreshCw, Clock, AlertTriangle, Camera } from 'lucide-react';
 
 interface AqiData {
@@ -21,11 +22,7 @@ interface Advisory {
 }
 
 export default function Home() {
-  const { session } = useAuth();
-  const [aqi, setAqi] = useState<AqiData | null>(null);
-  const [advisories, setAdvisories] = useState<Advisory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const { user, isReady } = useAuth();
   const [minutesAgo, setMinutesAgo] = useState(0);
 
   // Onboarding States
@@ -43,13 +40,72 @@ export default function Home() {
     setShowOnboarding(false);
   };
 
+  // Auth-Guarded Data Fetching
+  const { data, fetching, refetch } = useAuthGuardedQuery<{
+    aqi: AqiData | null;
+    advisories: Advisory[];
+  }>(async () => {
+    if (!user) return { data: null, error: null };
+
+    // 1. Fetch Profile for ward_id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('ward_id')
+      .eq('id', user.id)
+      .single();
+
+    let targetWardId = profile?.ward_id;
+
+    // Fallback logic
+    if (!targetWardId) {
+      const { data: fallbackWards } = await supabase
+        .from('latest_ward_aqi')
+        .select('ward_id')
+        .limit(1);
+      if (fallbackWards && fallbackWards.length > 0) {
+        targetWardId = fallbackWards[0].ward_id;
+      }
+    }
+
+    if (!targetWardId) return { data: { aqi: null, advisories: [] }, error: null };
+
+    // 2. Fetch Latest AQI & Advisories in parallel
+    const [aqiRes, adviceRes] = await Promise.all([
+      supabase.from('latest_ward_aqi').select('*').eq('ward_id', targetWardId).single(),
+      supabase.from('ai_suggestions').select('id, suggestion_text, suggestion_type').eq('ward_id', targetWardId).limit(3)
+    ]);
+
+    return { 
+      data: { 
+        aqi: aqiRes.data as AqiData, 
+        advisories: (adviceRes.data || []) as Advisory[]
+      }, 
+      error: aqiRes.error 
+    };
+  }, [user?.id]);
+
+  const aqi = data?.aqi;
+  const advisories = data?.advisories || [];
+
+  // Auto-Refresh
+  useEffect(() => {
+    if (isReady && user) {
+      const refreshInterval = setInterval(refetch, 5 * 60 * 1000); // 5 mins
+      const timeInterval = setInterval(() => setMinutesAgo(prev => prev + 1), 60 * 1000);
+      return () => {
+        clearInterval(refreshInterval);
+        clearInterval(timeInterval);
+      };
+    }
+  }, [isReady, user]);
+
   const getAQIColor = (aqi: number) => {
-    if (aqi <= 50) return '#00e400';
-    if (aqi <= 100) return '#ffff00';
-    if (aqi <= 150) return '#ff7e00';
-    if (aqi <= 200) return '#ff0000';
-    if (aqi <= 300) return '#8f3f97';
-    return '#7e0023';
+    if (aqi <= 50) return '#16a34a';
+    if (aqi <= 100) return '#ca8a04';
+    if (aqi <= 150) return '#ea580c';
+    if (aqi <= 200) return '#dc2626';
+    if (aqi <= 300) return '#7c3aed';
+    return '#4c1d95';
   };
 
   const getAQICategory = (aqi: number) => {
@@ -64,132 +120,39 @@ export default function Home() {
   const getGaugeOffset = (aqi: number) => {
     const radius = 120;
     const circumference = 2 * Math.PI * radius;
-    // Cap at 500 for scaling
     const value = Math.min(Math.max(0, aqi), 500);
     const percent = value / 500;
     return circumference - percent * circumference;
   };
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      if (!session?.user?.id) {
-        setLoading(false);
-        return;
-      }
-
-
-      // 1. Fetch Profile for ward_id
-      const { data: profile, error: pError } = await supabase
-        .from('profiles')
-        .select('ward_id')
-        .eq('id', session.user.id)
-        .single();
-
-      let targetWardId = profile?.ward_id;
-
-      // Fallback: If no ward configured, fetch first from view
-      if (pError || !targetWardId) {
-        const { data: fallbackWards } = await supabase
-          .from('latest_ward_aqi')
-          .select('ward_id')
-          .limit(1);
-        if (fallbackWards && fallbackWards.length > 0) {
-          targetWardId = fallbackWards[0].ward_id;
-        }
-      }
-
-      if (!targetWardId) {
-        setLoading(false);
-        return;
-      }
-
-      // 2. Fetch Latest AQI
-      const { data: aqiData, error: aqiError } = await supabase
-        .from('latest_ward_aqi')
-        .select('*')
-        .eq('ward_id', targetWardId)
-        .single();
-
-      if (aqiError) throw aqiError;
-      if (aqiData) {
-        setAqi(aqiData);
-        setLastUpdated(new Date());
-        setMinutesAgo(0);
-      }
-
-      // 3. Fetch Advisories
-      const { data: adviceData } = await supabase
-        .from('ai_suggestions')
-        .select('id, suggestion_text, suggestion_type')
-        .eq('ward_id', targetWardId)
-        .limit(3);
-
-      if (adviceData) {
-        setAdvisories(adviceData);
-      } else {
-        setAdvisories([]);
-      }
-
-    } catch (err) {
-      console.error('Error fetching citizen AQI data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Auto-Refresh & Time Tracker
-  useEffect(() => {
-    if (session) {
-      fetchData();
-
-      const refreshInterval = setInterval(fetchData, 5 * 60 * 1000); // 5 mins
-      const timeInterval = setInterval(() => {
-        setMinutesAgo(prev => prev + 1);
-      }, 60 * 1000); // 1 min update
-
-      return () => {
-        clearInterval(refreshInterval);
-        clearInterval(timeInterval);
-      };
-    }
-  }, [session]);
-
-  if (loading && !aqi) {
+  if (fetching && !aqi) {
     return (
       <CitizenLayout>
         <div className="max-width-mobile mx-auto h-full flex flex-col bg-[var(--bg-primary)] px-4 pt-4 gap-6 overflow-hidden">
-           {/* Header Shimmer */}
            <div className="flex items-center justify-between">
               <div className="space-y-2">
-                 <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-                 <div className="w-32 h-5 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+                 <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
+                 <div className="w-32 h-5 bg-[var(--bg-tertiary)] rounded shimmer" />
               </div>
-              <div className="w-16 h-6 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+              <div className="w-16 h-6 bg-[var(--bg-tertiary)] rounded shimmer" />
            </div>
-
-           {/* Gauge Shimmer */}
            <div className="flex justify-center py-6">
-              <div className="w-60 h-60 rounded-full border-8 border-[var(--bg-secondary)] animate-pulse flex flex-col items-center justify-center">
-                 <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded mb-2" />
-                 <div className="w-20 h-12 bg-[var(--bg-tertiary)] rounded mb-2" />
-                 <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded" />
+              <div className="w-60 h-60 rounded-full border-8 border-[var(--bg-secondary)] flex flex-col items-center justify-center">
+                 <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded mb-2 shimmer" />
+                 <div className="w-20 h-12 bg-[var(--bg-tertiary)] rounded mb-2 shimmer" />
+                 <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded shimmer" />
               </div>
            </div>
-
-           {/* Advisory Shimmer */}
-           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 h-24 animate-pulse flex flex-col gap-2">
-              <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded" />
-              <div className="w-full h-3 bg-[var(--bg-tertiary)] rounded" />
-              <div className="w-3/4 h-3 bg-[var(--bg-tertiary)] rounded" />
+           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 h-24 flex flex-col gap-2">
+              <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
+              <div className="w-full h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
+              <div className="w-3/4 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
            </div>
-
-           {/* Grid Shimmer */}
            <div className="grid grid-cols-2 gap-3">
               {[1,2,3,4].map(i => (
-                 <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] p-4 rounded-xl h-20 animate-pulse flex flex-col gap-2">
-                    <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded" />
-                    <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded" />
+                 <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] p-4 rounded-xl h-20 flex flex-col gap-2">
+                    <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
+                    <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded shimmer" />
                  </div>
               ))}
            </div>
@@ -208,13 +171,10 @@ export default function Home() {
              <p className="text-xs text-[var(--text-muted)]">Failed to fetch local AQI metrics.</p>
           </div>
           <button 
-            onClick={() => {
-               setLoading(true);
-               fetchData();
-            }}
+            onClick={() => refetch()}
             className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-all"
           >
-             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+             <RefreshCw size={14} className={fetching ? 'animate-spin' : ''} />
              Tap to Retry
           </button>
         </div>
@@ -233,7 +193,7 @@ export default function Home() {
         <div className="p-4 flex items-center justify-between border-b border-[var(--border)]">
           <div>
             <p className="text-xs text-[var(--text-muted)]">Current Area</p>
-            <h3 className="font-bold text-lg font-manrope flex items-center gap-1">
+            <h3 className="font-bold text-lg flex items-center gap-1" style={{ fontFamily: 'var(--font-display)' }}>
               📍 {aqi.ward_name}, Delhi
             </h3>
           </div>
@@ -246,7 +206,6 @@ export default function Home() {
         {/* Circular Gauge */}
         <div className="flex flex-col items-center justify-center py-8 relative">
           <svg className="w-64 h-64 transform -rotate-90">
-            {/* Background Track */}
             <circle
               cx="128"
               cy="128"
@@ -255,7 +214,6 @@ export default function Home() {
               strokeWidth="12"
               fill="transparent"
             />
-            {/* Colored Gauge Indicator */}
             <circle
               cx="128"
               cy="128"
@@ -269,7 +227,6 @@ export default function Home() {
               strokeLinecap="round"
             />
           </svg>
-          {/* Inner Text overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center transform rotate-0 mt-3">
             <span className="text-xs uppercase text-[var(--text-muted)] font-semibold tracking-wider">AQI</span>
             <h1 className="text-6xl font-black font-manrope tracking-tighter" style={{ color }}>
@@ -344,24 +301,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick stats ... earlier rows details */}
-
         {/* Onboarding Swipeable Modal overlay */}
         {showOnboarding && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[2000] flex items-center justify-center p-6 animate-fadeIn">
              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-3xl w-full max-w-sm p-6 flex flex-col items-center text-center gap-4 relative shadow-2xl">
-                
-                {/* Skip button */}
                 <button 
                   onClick={handleFinishOnboard}
                   className="absolute top-4 right-4 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 >
                   Skip
                 </button>
-
-                {/* Simulated Swipe Content */}
                 <div className="py-6 flex flex-col items-center gap-4">
-                   
                    {onboardStep === 1 && (
                       <div className="flex flex-col items-center gap-3 animate-slideIn">
                          <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400">
@@ -371,7 +321,6 @@ export default function Home() {
                          <p className="text-xs text-[var(--text-muted)] px-4">Get hyper-local real-time AQI updates and AI health advisories specifically for your local street node.</p>
                       </div>
                    )}
-
                    {onboardStep === 2 && (
                       <div className="flex flex-col items-center gap-3 animate-slideIn">
                          <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400">
@@ -381,7 +330,6 @@ export default function Home() {
                          <p className="text-xs text-[var(--text-muted)] px-4">Snap pictures of waste nodes to classify them accurately. Earn Eco Credits for your environmental stewardship.</p>
                       </div>
                    )}
-
                    {onboardStep === 3 && (
                       <div className="flex flex-col items-center gap-3 animate-slideIn">
                          <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-400">
@@ -391,28 +339,21 @@ export default function Home() {
                          <p className="text-xs text-[var(--text-muted)] px-4">Climb your local ward leaderboard. Higher precision yields better environment benchmarks for your family.</p>
                       </div>
                    )}
-
                 </div>
-
-                {/* Paged Navigation Dots layout */}
                 <div className="flex items-center gap-1.5 mt-2">
                    {[1, 2, 3].map(dot => (
                       <div key={dot} className={`w-1.5 h-1.5 rounded-full transition-all ${onboardStep === dot ? 'bg-emerald-500 w-4' : 'bg-slate-700'}`} />
                    ))}
                 </div>
-
-                {/* Bottom Action Footer sizing */}
                 <button 
                   onClick={() => onboardStep < 3 ? setOnboardStep(onboardStep + 1) : handleFinishOnboard()}
                   className="w-full bg-emerald-500 hover:bg-emerald-600 font-bold text-sm py-3 rounded-xl mt-4 transition-all"
                 >
                   {onboardStep < 3 ? 'Continue' : 'Get Started'}
                 </button>
-
              </div>
           </div>
         )}
-
       </div>
     </CitizenLayout>
   );

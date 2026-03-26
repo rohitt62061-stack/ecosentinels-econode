@@ -1,0 +1,2 @@
+d:\safebrowser\ecosentinels-econode\eco-sentinals\client\dist\assets\index-BOM0RjM7.js
+d:\safebrowser\ecosentinels-econode\eco-sentinals\client\src\pages\citizen\Waste.tsx

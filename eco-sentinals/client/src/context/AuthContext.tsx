@@ -5,8 +5,10 @@ type UserRole = 'mcd' | 'citizen' | null;
 
 interface AuthContextType {
   session: any;
+  user: any;
   role: UserRole;
   loading: boolean;
+  isReady: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -31,7 +33,6 @@ async function createProfile(userId: string, fullName: string, role: UserRole = 
     .single();
 
   if (error) {
-    // Only log if it's not a duplicate key error (which can happen during race conditions)
     if (error.code !== '23505') {
       console.error('Error creating profile:', error);
     }
@@ -44,34 +45,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<any>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
   const activeUserId = useRef<string | null>(null);
 
   const resolveRole = async (sess: any) => {
     if (!sess) {
       activeUserId.current = null;
       setRole(null);
+      setIsReady(true); // Confirmed no session
       return;
     }
 
     const { user } = sess;
-    // Prevent concurrent resolutions for the same user
     if (activeUserId.current === user.id) return;
     activeUserId.current = user.id;
 
     try {
-      // 1. Try to fetch existing profile
       let profile = await fetchProfile(user.id);
       
       if (!profile) {
-        // 2. If NO profile exists (New User)
-        // Always default to 'citizen' for new users for security
         profile = await createProfile(
           user.id, 
           user.user_metadata?.full_name || user.email?.split('@')[0] || 'New User',
           'citizen'
         );
 
-        // If createProfile failed but it was a race (another request created it), try fetching again
         if (!profile) {
           profile = await fetchProfile(user.id);
         }
@@ -80,20 +78,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profile) {
         setRole(profile.role as UserRole);
 
-        // 3. Handle unauthorized MCD registration attempts
         const selectedRole = sessionStorage.getItem('selected_role');
         if (selectedRole === 'mcd' && profile.role !== 'mcd') {
-          // Redirect back to login with error - they are now registered as citizen but don't have MCD access
           window.location.href = '/mcd/login?error=unauthorized';
           return;
         }
       } else {
-        // Reset lock on failure so it can be re-attempted
         activeUserId.current = null;
       }
     } catch (err) {
       activeUserId.current = null;
       console.error('Resolution error:', err);
+    } finally {
+      setIsReady(true);
     }
   };
 
@@ -115,11 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     activeUserId.current = null;
+    setIsReady(false);
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ session, role, loading, signOut }}>
+    <AuthContext.Provider value={{ 
+      session, 
+      user: session?.user ?? null, 
+      role, 
+      loading, 
+      isReady: isReady && !loading, // isReady true only when loading finished
+      signOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );

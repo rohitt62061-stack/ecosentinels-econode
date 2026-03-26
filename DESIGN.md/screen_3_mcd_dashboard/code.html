@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MCD Civic Editorial - Dashboard</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&amp;family=Geist+Mono:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#dde4e1",
+              "tertiary": "#431a00",
+              "secondary-fixed": "#d7e2ff",
+              "primary-fixed": "#c1ecd4",
+              "on-error-container": "#93000a",
+              "surface": "#f4fbf8",
+              "on-secondary-fixed-variant": "#2d4773",
+              "surface-container": "#e8efec",
+              "on-secondary-container": "#3b5481",
+              "tertiary-fixed-dim": "#ffb68e",
+              "inverse-primary": "#a5d0b9",
+              "surface-container-lowest": "#ffffff",
+              "primary": "#012d1d",
+              "secondary": "#465e8c",
+              "tertiary-container": "#652a00",
+              "surface-container-low": "#eef5f2",
+              "primary-container": "#1b4332",
+              "on-surface": "#161d1b",
+              "on-primary-container": "#86af99",
+              "on-tertiary-fixed-variant": "#763300",
+              "on-error": "#ffffff",
+              "on-primary-fixed-variant": "#274e3d",
+              "outline-variant": "#c1c8c2",
+              "secondary-container": "#b1cafd",
+              "on-surface-variant": "#414844",
+              "surface-container-high": "#e3eae7",
+              "inverse-surface": "#2b3230",
+              "on-tertiary": "#ffffff",
+              "primary-fixed-dim": "#a5d0b9",
+              "error": "#ba1a1a",
+              "on-secondary": "#ffffff",
+              "background": "#f4fbf8",
+              "tertiary-fixed": "#ffdbca",
+              "on-background": "#161d1b",
+              "surface-container-highest": "#dde4e1",
+              "surface-bright": "#f4fbf8",
+              "surface-tint": "#3f6653",
+              "on-secondary-fixed": "#001b3f",
+              "on-tertiary-fixed": "#331200",
+              "on-tertiary-container": "#f98740",
+              "on-primary-fixed": "#002114",
+              "surface-dim": "#d4dcd9",
+              "inverse-on-surface": "#ebf2ef",
+              "error-container": "#ffdad6",
+              "outline": "#717973",
+              "on-primary": "#ffffff",
+              "secondary-fixed-dim": "#aec7fb"
+            },
+            fontFamily: {
+              "headline": ["Fraunces"],
+              "body": ["DM Sans"],
+              "label": ["DM Sans"],
+              "mono": ["Geist Mono"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .serif-heading { font-family: 'Fraunces', serif; }
+        .mono-data { font-family: 'Geist Mono', monospace; }
+        .sans-label { font-family: 'DM Sans', sans-serif; }
+        
+        /* Glassmorphism for specific UI elements */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface sans-label min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#f4fbf8] dark:bg-[#012d1d] flex justify-between items-center w-full px-6 py-4 docked full-width top-0 sticky z-40">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#1B4332] dark:text-[#C1ECD4]">menu</span>
+<h1 class="text-xl font-bold serif-heading text-[#1B4332] dark:text-[#C1ECD4]">MCD Civic Editorial</h1>
+</div>
+<div class="h-10 w-10 rounded-full bg-surface-container-highest overflow-hidden">
+<img alt="MCD Official Seal" class="h-full w-full object-cover" data-alt="Official circular brass seal of the Municipal Corporation of Delhi with intricate patterns and elegant typography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4rlBSJziNKdCijSFbqiwdz4GDrWoyWhtA7WEOJsS40ujdOfJmV82WBO86ibmHUl-xp4CLc0H3fIIW4Ww_G4Qhs1UoldOzGlbdXQH6EQjrXmFki0aEJ9k-yh0eFC5cBcu2QJ-a3U57AVusiIFWhxhgLEhStZlDsybA0jQZvCPdPEFaQo4695178elPBBSQS5aP2pg8oRLTMN4u8nlzUr-SGf8eM7JhNN3oeWT0zhXgRX-c0QeoBokbUA-wLYM4vCbOEPzyn-XTqck"/>
+</div>
+</header>
+<main class="px-5 pt-4 space-y-6">
+<!-- Welcome Hero Asymmetric Section -->
+<section class="relative">
+<div class="flex flex-col gap-1">
+<span class="sans-label text-xs uppercase tracking-widest text-on-surface-variant font-medium">Daily Briefing</span>
+<h2 class="serif-heading text-3xl font-bold text-primary leading-tight">Civic Vitality<br/>Report</h2>
+</div>
+<div class="absolute -top-2 -right-2 w-20 h-20 bg-primary-fixed-dim/20 rounded-full blur-2xl"></div>
+</section>
+<!-- KPI Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Total Wards -->
+<div class="bg-surface-container-low p-5 rounded-xl flex flex-col justify-between h-32 hover:bg-[#e8efec] transition-colors">
+<span class="sans-label text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-tighter">Total Wards</span>
+<div class="flex items-baseline gap-1">
+<span class="mono-data text-4xl font-bold text-primary">295</span>
+<span class="material-symbols-outlined text-sm text-primary/40">location_city</span>
+</div>
+</div>
+<!-- Active Alerts (Warm Gold) -->
+<div class="bg-tertiary-fixed p-5 rounded-xl flex flex-col justify-between h-32 glass-card">
+<span class="sans-label text-[10px] uppercase font-bold text-on-tertiary-fixed-variant tracking-tighter">Active Alerts</span>
+<div class="flex items-baseline gap-1">
+<span class="mono-data text-4xl font-bold text-tertiary">12</span>
+<span class="material-symbols-outlined text-sm text-tertiary" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+<!-- Health Cost Saved -->
+<div class="col-span-2 bg-primary-container p-5 rounded-xl flex items-center justify-between group">
+<div class="flex flex-col">
+<span class="sans-label text-[10px] uppercase font-bold text-on-primary-container tracking-tighter">Health Cost Saved</span>
+<div class="flex items-baseline gap-2">
+<span class="mono-data text-3xl font-bold text-white">₹42.5 Cr</span>
+</div>
+</div>
+<div class="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-fixed group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+</div>
+<!-- Fleet Routes -->
+<div class="col-span-2 bg-surface-container p-5 rounded-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="sans-label text-[10px] uppercase font-bold text-on-surface-variant tracking-tighter">Fleet Routes Efficiency</span>
+<span class="mono-data text-3xl font-bold text-primary">89%</span>
+</div>
+<div class="w-24 h-2 bg-surface-container-highest rounded-full overflow-hidden relative">
+<div class="absolute inset-0 bg-primary w-[89%] rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- AQI Chart Section (Minimalist Line) -->
+<section class="bg-surface-container-low rounded-2xl p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="serif-heading text-lg font-semibold text-primary">24h AQI Trend</h3>
+<span class="sans-label text-[10px] bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-bold">LIVE DATA</span>
+</div>
+<div class="h-24 flex items-end justify-between gap-1">
+<!-- Simple stylized bar-line chart mock -->
+<div class="w-full h-1/2 bg-primary/10 rounded-t-sm"></div>
+<div class="w-full h-2/3 bg-primary/15 rounded-t-sm"></div>
+<div class="w-full h-3/4 bg-primary/20 rounded-t-sm"></div>
+<div class="w-full h-full bg-primary/40 rounded-t-sm"></div>
+<div class="w-full h-5/6 bg-primary/30 rounded-t-sm"></div>
+<div class="w-full h-3/4 bg-primary/25 rounded-t-sm"></div>
+<div class="w-full h-1/2 bg-primary/10 rounded-t-sm"></div>
+<div class="w-full h-1/3 bg-primary/5 rounded-t-sm"></div>
+<div class="w-full h-1/2 bg-primary/15 rounded-t-sm"></div>
+<div class="w-full h-2/3 bg-primary/30 rounded-t-sm"></div>
+<div class="w-full h-full bg-primary/50 rounded-t-sm"></div>
+<div class="w-full h-4/5 bg-primary/40 rounded-t-sm"></div>
+</div>
+<div class="flex justify-between mt-3 px-1">
+<span class="mono-data text-[9px] text-on-surface-variant/60">00:00</span>
+<span class="mono-data text-[9px] text-on-surface-variant/60">12:00</span>
+<span class="mono-data text-[9px] text-on-surface-variant/60">23:59</span>
+</div>
+</section>
+<!-- Ward Rankings Table -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="serif-heading text-lg font-semibold text-primary">Ward Rankings</h3>
+<span class="sans-label text-xs text-secondary font-medium underline">View All Wards</span>
+</div>
+<div class="space-y-1">
+<!-- Table Header (Conceptual) -->
+<div class="flex items-center px-4 py-2 text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest">
+<span class="w-2/3">Ward Name</span>
+<span class="w-1/3 text-right">AQI Status</span>
+</div>
+<!-- Table Rows -->
+<div class="flex items-center justify-between p-4 bg-surface-container rounded-lg">
+<span class="serif-heading font-medium text-primary">Karol Bagh</span>
+<span class="px-3 py-1 bg-[#d4f3e6] text-[#0d4d35] rounded-full mono-data text-[10px] font-bold">Good / 42</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface rounded-lg">
+<span class="serif-heading font-medium text-primary">Civil Lines</span>
+<span class="px-3 py-1 bg-[#fff2cc] text-[#856404] rounded-full mono-data text-[10px] font-bold">Poor / 185</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container rounded-lg">
+<span class="serif-heading font-medium text-primary">Najafgarh</span>
+<span class="px-3 py-1 bg-[#f8d7da] text-[#721c24] rounded-full mono-data text-[10px] font-bold">Severe / 412</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface rounded-lg">
+<span class="serif-heading font-medium text-primary">Rohini Zone</span>
+<span class="px-3 py-1 bg-[#d4f3e6] text-[#0d4d35] rounded-full mono-data text-[10px] font-bold">Good / 58</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#f4fbf8]/80 dark:bg-[#012d1d]/80 backdrop-blur-xl shadow-[0px_-12px_32px_rgba(15,41,34,0.06)] rounded-t-xl border-t border-[#c1c8c2]/20">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center bg-[#1B4332] text-[#ffffff] rounded-xl px-4 py-1.5 Active: scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Home</span>
+</a>
+<!-- Scan -->
+<a class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 hover:text-[#012d1d] dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">center_focus_weak</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Scan</span>
+</a>
+<!-- Score (Active context for Dashboard) -->
+<a class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 hover:text-[#012d1d] dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Score</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#1B4332]/70 dark:text-[#C1ECD4]/70 hover:text-[#012d1d] dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-sans text-[11px] font-medium tracking-wide uppercase mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,2 @@
+d:\safebrowser\ecosentinels-econode\eco-sentinals\client\node_modules\@supabase
+d:\safebrowser\ecosentinels-econode\eco-sentinals\client\node_modules\@supabase\supabase-js

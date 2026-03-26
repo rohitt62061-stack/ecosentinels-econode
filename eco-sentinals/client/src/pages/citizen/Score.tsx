@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CitizenLayout from '../../components/CitizenLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Award, Zap, Award as Trophy, Lock, Star, ShieldCheck, Flame } from 'lucide-react';
+import { Award, Lock, Sparkles, Flame, ShieldCheck, Trophy, Star } from 'lucide-react';
 
 interface ScoreData {
   total_scans: number;
@@ -14,17 +14,14 @@ interface ScoreData {
 
 interface LeaderboardItem {
   ward_name: string;
-  ward_number: string;
   citizens: number;
   avg_score: number;
-  rank: number;
 }
 
 export default function Score() {
   const { session } = useAuth();
   const [score, setScore] = useState<ScoreData | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -45,13 +42,11 @@ export default function Score() {
       setScore(data);
     } catch (err) {
       console.error("Error fetching score:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchLeaderboard = async () => {
-    const { data } = await supabase.from('ward_leaderboard').select('*').limit(5);
+    const { data } = await supabase.from('ward_leaderboard').select('ward_name, citizens, avg_score').limit(5);
     if (data) setLeaderboard(data);
   };
 
@@ -64,113 +59,139 @@ export default function Score() {
     return false;
   };
 
-  const radius = 90;
+  const radius = 80;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = score 
-    ? circumference - (Math.min(score.segregation_score, 100) / 100) * circumference 
-    : circumference;
-
-  const baseScore = score && score.total_scans > 0 
-    ? Math.round((score.correct_scans / score.total_scans) * 100) 
-    : 0;
-
-  const multiplier = score ? Math.min(1 + (Math.floor(score.streak_days / 7) * 0.05), 1.5).toFixed(2) : "1.00";
+  const progress = score ? Math.min(score.segregation_score, 100) / 100 : 0;
+  const offset = circumference * (1 - progress);
 
   return (
     <CitizenLayout>
-      <div className="p-4 bg-[var(--bg-primary)] min-h-full text-[var(--text-primary)] flex flex-col gap-5 max-w-md mx-auto overflow-y-auto pb-20 transition-colors duration-300">
+      <div className="flex flex-col h-full bg-[var(--surface)] text-[var(--text-primary)] transition-colors duration-500 overflow-y-auto pb-32">
         
-        <div>
-          <h1 className="text-xl font-bold font-manrope">Achievement Ledger</h1>
-          <p className="text-xs text-[var(--citizen-primary)] opacity-80">Track points, streaks, and ward standings</p>
+        {/* Editorial Header */}
+        <div className="p-8 pb-4">
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-[var(--text-muted)] mb-2 block">
+            Screen 08: Achievement Ledger
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+            Ecology Dividends
+          </h1>
+          <div className="w-12 h-[1px] bg-[var(--primary)] opacity-20 mt-4"></div>
         </div>
 
-        {/* Circular Score Ring */}
-        <div className="flex flex-col items-center justify-center py-4 relative">
-          <svg className="w-52 h-52 transform -rotate-90">
-            <circle cx="104" cy="104" r={radius} stroke="var(--bg-tertiary)" strokeWidth="10" fill="transparent" />
-            <circle 
-              cx="104" cy="104" r={radius} 
-              stroke="#10b981" strokeWidth="12" fill="transparent" 
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-1000 ease-out"
-              strokeLinecap="round"
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider">Segregation</span>
-            <h1 className="text-4xl font-black font-manrope text-[var(--text-primary)]">
-              {score ? Math.round(score.segregation_score) : 0}
-            </h1>
-            <div className="flex items-center gap-1 mt-1 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-              <span className="text-xs font-bold text-emerald-400">₹{score ? score.monthly_credits : '0.00'}</span>
+        {/* Score Ring Section - Tonal Layering */}
+        <div className="mx-4 mb-8 bg-[var(--surface-container-low)] rounded-[var(--radius-lg)] p-8 flex flex-col items-center relative overflow-hidden">
+          {/* Decorative Corner Element */}
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Trophy size={48} />
+          </div>
+
+          <div className="relative flex items-center justify-center">
+            <svg className="w-48 h-48 transform -rotate-90">
+              <circle cx="96" cy="96" r={radius} stroke="var(--surface-container-highest)" strokeWidth="8" fill="transparent" className="opacity-30" />
+              <circle 
+                cx="96" cy="96" r={radius} 
+                stroke="var(--primary)" strokeWidth="10" fill="transparent" 
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+                strokeLinecap="round"
+                className="transition-all duration-1000 ease-out"
+              />
+            </svg>
+            
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-[var(--text-muted)]">Citizen Score</span>
+              <h2 className="text-5xl font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-display)' }}>
+                {score ? Math.round(score.segregation_score) : 0}
+              </h2>
+              <div className="flex items-center gap-1 mt-2 text-amber-600 font-bold text-xs">
+                <Sparkles size={12} /> ₹{score ? score.monthly_credits : '0.00'}
+              </div>
             </div>
           </div>
-          {score && score.streak_days > 0 && (
-            <div className="absolute top-4 right-12 bg-amber-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 shadow-lg animate-bounce">
-              <Flame size={12} /> {score.streak_days} DAY
-            </div>
-          )}
-        </div>
 
-        {/* transparent formula card */}
-        <div className="bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl p-4 flex flex-col gap-2">
-          <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">Scoring Formula</h3>
-          <p className="text-[10px] text-[var(--text-muted)] opacity-60">Correct ÷ Total × 100 × Streak Bonus = Points</p>
-          <div className="mt-2 text-sm font-black flex items-center justify-between text-[var(--text-primary)] bg-[var(--bg-primary)]/50 p-2.5 rounded-xl border border-[var(--border)]">
-            <span>{score ? score.correct_scans : 0} ÷ {score ? score.total_scans : 0} × 100</span>
-            <span className="text-[var(--text-muted)]">=</span>
-            <span className="text-[var(--citizen-primary)]">{baseScore}</span>
-            <span className="text-[var(--text-muted)]">×</span>
-            <span>{multiplier}x</span>
-            <span className="text-[var(--text-muted)]">=</span>
-            <span className="text-[var(--citizen-primary)]">{score ? Math.round(score.segregation_score) : 0}</span>
+          <div className="mt-8 grid grid-cols-2 gap-8 w-full">
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[var(--text-muted)] mb-1">Weekly Streak</span>
+              <div className="flex items-center gap-2 text-rose-600 font-bold">
+                <Flame size={16} />
+                <span style={{ fontFamily: 'var(--font-mono)' }}>{score?.streak_days || 0} Days</span>
+              </div>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] font-mono uppercase tracking-widest text-[var(--text-muted)] mb-1">Global Rank</span>
+              <div className="flex items-center gap-2 text-[var(--primary)] font-bold">
+                <Award size={16} />
+                <span style={{ fontFamily: 'var(--font-mono)' }}>#12/28k</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Badges Grid */}
-        <div className="flex flex-col gap-3">
-          <h3 className="text-sm font-bold text-[var(--text-secondary)]">Badges & Perks</h3>
-          <div className="grid grid-cols-3 gap-3">
+        {/* Achievement Badges - No Lines, Tonal Hierarchy */}
+        <div className="px-8 mb-12">
+          <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--text-muted)] mb-6">
+            Sovereign Commendations
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
             {[
-              { id: 'first_scan', label: 'First Scan', icon: Trophy },
-              { id: 'week_warrior', label: 'Week Warrior', icon: Flame },
-              { id: 'scans_100', label: '100 Scans Club', icon: Star },
-              { id: 'perfect_month', label: 'Perfect Segregater', icon: ShieldCheck },
+              { id: 'first_scan', label: 'First Metabolism', icon: Trophy },
+              { id: 'week_warrior', label: 'Consistency Seal', icon: Flame },
+              { id: 'scans_100', label: 'Centurion Scout', icon: Star },
+              { id: 'perfect_month', label: 'Metabolic Master', icon: ShieldCheck },
             ].map(b => {
               const earned = getBadgeStatus(b.id);
               return (
-                <div key={b.id} className={`p-3 border rounded-xl flex flex-col items-center text-center gap-1.5 transition-all ${
-                  earned ? 'bg-[var(--citizen-primary)]/20 border-[var(--citizen-primary)]/30 text-[var(--citizen-primary)]' : 'bg-[var(--bg-secondary)]/20 border-[var(--border)] text-[var(--text-muted)]'
-                }`}>
-                  <b.icon size={24} className={earned ? 'animate-pulse' : 'opacity-40'} />
-                  <span className="text-[9px] font-bold leading-tight">{b.label}</span>
-                  {!earned && <Lock size={10} className="text-slate-700 mt-0.5" />}
+                <div 
+                  key={b.id} 
+                  className={`p-6 rounded-[var(--radius-lg)] flex flex-col items-center text-center gap-3 transition-all duration-500 ${
+                    earned 
+                      ? 'bg-[var(--tertiary-fixed)] text-[var(--tertiary)] shadow-[var(--shadow-ambient)]' 
+                      : 'bg-[var(--surface-container)] text-[var(--text-muted)] opacity-40'
+                  }`}
+                  style={{ borderRadius: '0.75rem' }} // soft-seal
+                >
+                  <div className="relative">
+                    <b.icon size={28} className={earned ? 'animate-pulse' : ''} />
+                    {!earned && <Lock size={12} className="absolute -top-1 -right-1" />}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest leading-tight">
+                    {b.label}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Leaderboard */}
-        <div className="flex flex-col gap-3 mt-1">
-          <h3 className="text-sm font-bold text-[var(--text-secondary)]">Ward Standings</h3>
-          <div className="bg-[var(--bg-secondary)]/20 border border-[var(--border)] overflow-hidden rounded-xl">
+        {/* Leaderboard - No Dividers */}
+        <div className="px-8">
+          <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--text-muted)] mb-6">
+            Inter-Ward Standings
+          </h3>
+          <div className="flex flex-col gap-[0.3rem]">
             {leaderboard.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border-b border-[var(--border)] last:border-0">
-                <div className="flex items-center gap-3">
-                  <span className={`font-black text-xs ${index === 0 ? 'text-amber-400' : index === 1 ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'}`}>
-                    #{index + 1}
+              <div 
+                key={index} 
+                className={`flex items-center justify-between p-4 rounded-[var(--radius-md)] ${
+                  index % 2 === 0 ? 'bg-[var(--surface-container-low)]' : 'bg-[var(--surface)]'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-mono text-[var(--text-muted)]">
+                    {(index + 1).toString().padStart(2, '0')}
                   </span>
                   <div>
-                    <p className="text-xs font-bold text-[var(--text-primary)]">{item.ward_name}</p>
-                    <p className="text-[9px] text-[var(--text-muted)]">{item.citizens} citizens active</p>
+                    <p className="text-sm font-bold text-[var(--text-primary)]">{item.ward_name}</p>
+                    <p className="text-[9px] font-mono uppercase tracking-widest text-[var(--text-muted)]">
+                      {item.citizens} Nodes Active
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-black text-xs text-[var(--citizen-primary)]">{item.avg_score}</span>
-                  <p className="text-[9px] text-[var(--text-muted)] opacity-60">Avg score</p>
+                  <span className="text-sm font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-mono)' }}>
+                    {item.avg_score}
+                  </span>
                 </div>
               </div>
             ))}
