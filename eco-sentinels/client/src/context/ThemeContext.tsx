@@ -19,17 +19,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('econode-theme', theme);
     
-    // Also toggle the 'dark' and 'light' classes for Tailwind standard dark: modifier if needed
-    // However, since we are moving to CSS variables, these might be redundant but safe for legacy
+    // We are no longer aggressively adding .dark by default to solve the invisible content bug.
+    // Dark mode is now strictly opt-in via data-theme.
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else if (theme === 'light') {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
     } else {
-      // Civic mode - can be considered a specialized light/dark, but we treat it separately
-      document.documentElement.classList.remove('dark', 'light');
+      document.documentElement.classList.remove('dark');
+    }
+    
+    // Legacy light removal
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
     }
   }, [theme]);
 

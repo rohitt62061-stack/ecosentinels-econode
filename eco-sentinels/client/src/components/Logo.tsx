@@ -6,6 +6,7 @@ interface LogoProps {
 }
 
 export default function Logo({ className = "w-8 h-8", showText = false }: LogoProps) {
+  console.log('Logo component mounting...');
   const { theme } = useTheme();
 
   // Define colors based on theme

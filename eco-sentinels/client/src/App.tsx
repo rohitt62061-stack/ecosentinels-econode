@@ -20,17 +20,17 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Splash />} />
-          <Route path="/select" element={<SelectRole />} />
+          <Route path="/" element={<ErrorBoundary><Splash /></ErrorBoundary>} />
+          <Route path="/select" element={<ErrorBoundary><SelectRole /></ErrorBoundary>} />
 
           {/* Auth Routes */}
-          <Route path="/mcd/login" element={<McdLogin />} />
-          <Route path="/citizen/login" element={<CitizenLogin />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/mcd/login" element={<ErrorBoundary><McdLogin /></ErrorBoundary>} />
+          <Route path="/citizen/login" element={<ErrorBoundary><CitizenLogin /></ErrorBoundary>} />
+          <Route path="/auth/callback" element={<ErrorBoundary><AuthCallback /></ErrorBoundary>} />
 
           {/* Protected MCD Routes */}
           <Route element={<AuthGuard requiredRole="mcd" />}>
@@ -53,7 +53,7 @@ export default function App() {
           {/* 404 Redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

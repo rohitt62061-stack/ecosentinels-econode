@@ -2,6 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Fix for libraries that expect 'global' in the browser
+      window.global = window;
+      
+      // Force unregister stale service workers that might be causing loops
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (let registration of registrations) {
+            registration.unregister();
+            console.log('Unregistered SW:', registration);
+          }
+        });
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Econode | Hyper-Local Urban Intelligence</title>
@@ -26,7 +40,6 @@
     <meta property="twitter:description" content="Real-time hyper-local AQI and waste management platform setups formatting sizing configs loaded framing configurations loaded designs scaling structures loads layouts configurations architectures scaling framing dashboards grids budgets configs models frameworks dataset sets backgrounds setups formats frameworks configurations loaded backgrounds." />
     <meta property="twitter:image" content="https://images.unsplash.com/photo-1611273231454-e69c89aa14bc?auto=format&fit=crop&w=1200&q=80" />
 
-    <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet" />

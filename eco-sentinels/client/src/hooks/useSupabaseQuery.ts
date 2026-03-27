@@ -13,7 +13,7 @@ export function useSupabaseQuery<T>(
   deps: any[] = []
 ) {
   const { isReady } = useAuth();
-  const [data, setData] = useState<T | null>(() => getFromCache(cacheKey));
+  const [data, setData] = useState<T | undefined>(() => getFromCache(cacheKey) || undefined);
   const [loading, setLoading] = useState(!data);
 
   const fetchData = async () => {

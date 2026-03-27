@@ -4,6 +4,7 @@ import Logo from '../components/Logo';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Splash() {
+  console.log('Splash component mounting...');
   const navigate = useNavigate();
   useTheme();
 

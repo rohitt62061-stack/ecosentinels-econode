@@ -18,75 +18,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<any>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
-  const [isReady, setIsReady] = useState(false);
   const activeUserId = useRef<string | null>(null);
 
   const resolveRole = async (sess: any) => {
-    if (!sess) {
-      activeUserId.current = null;
-      setRole(null);
-      setIsReady(true); // Confirmed no session
-      return;
-    }
-
-    const { user } = sess;
-    if (activeUserId.current === user.id) return;
-    activeUserId.current = user.id;
-
     try {
+      if (!sess || !sess?.user) {
+        activeUserId.current = null;
+        setRole(null);
+        return;
+      }
+
+      const { user } = sess;
+      if (activeUserId.current === user?.id && role !== null) return;
+      activeUserId.current = user?.id || null;
+
+      if (!user?.id) return;
+
       // 1. Fetch or create profile as 'citizen' by default
       const { data: profile, error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          full_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
           role: 'citizen' // ALWAYS citizen by default — MCD is granted manually in DB
-        }, { onConflict: 'id', ignoreDuplicates: true }) // Only insert if not exists
+        }, { onConflict: 'id', ignoreDuplicates: true })
         .select('role')
         .single();
 
       if (error) throw error;
-
-      if (profile) {
-        setRole(profile.role as UserRole);
-
-        // 2. Strict check for MCD session selection
-        const selectedRole = sessionStorage.getItem('selected_role');
-        if (selectedRole === 'mcd' && profile.role !== 'mcd') {
-          // Dangerous fallback to domain-based role is REMOVED.
-          // Profiles table is the ONLY source of truth.
-          window.location.href = '/mcd/login?error=unauthorized';
-          return;
-        }
-      }
+      setRole((profile?.role as UserRole) ?? 'citizen');
     } catch (err) {
       activeUserId.current = null;
       console.error('Auth resolution error:', err);
-    } finally {
-      setIsReady(true);
+      setRole(null);
     }
+    // We defer setLoading to the effects calling this function.
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Session error:', error);
+          setSession(null);
+          setRole(null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         await resolveRole(session);
+      } catch (error) {
+        if (!mounted) return;
+        console.error('AuthContext initialization failed:', error);
+        // Set safe defaults instead of crashing:
+        setSession(null);
+        setRole(null);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      await resolveRole(session);
-      setLoading(false);
+      if (!mounted) return;
+      try {
+        setSession(session);
+        await resolveRole(session);
+      } catch (err) {
+        console.error('Auth state change error:', err);
+        setSession(null);
+        setRole(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
@@ -101,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null, 
       role, 
       loading, 
-      isReady: !loading, // isReady is true exactly when loading finishes
+      isReady: !loading,
       signOut 
     }}>
       {children}
