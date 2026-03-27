@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  
+  /* LIGHT THEME (default — use for competition) */
+  --bg:         #f8f7f4;
+  --bg2:        #ffffff;
+  --bg3:        #f0ede6;
+  --text:       #111110;
+  --text2:      #6b6860;
+  --text3:      #a8a49c;
+  --border:     #e4e2dc;
+  --border2:    #ccc9c0;
+  --accent:     #166534;
+  --accent-fg:  #ffffff;
+  --mcd:        #1a3560;
+  --citizen:    #166534;
+  --aqi-good:   #16a34a;
+  --aqi-mod:    #ca8a04;
+  --aqi-bad:    #ea580c;
+  --aqi-vbad:   #dc2626;
+  --aqi-haz:    #7c3aed;
+
+  /* Legacy mappings for components not yet refactored */
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--bg2);
+  --bg-tertiary: var(--bg3);
+  --text-primary: var(--text);
+  --text-secondary: var(--text2);
+  --text-muted: var(--text3);
+  --border-strong: var(--border2);
+}
+
+[data-theme="dark"] {
+  --bg:         #0e0e10;
+  --bg2:        #16161a;
+  --bg3:        #1c1c22;
+  --text:       #e8e8f0;
+  --text2:      #686880;
+  --text3:      #46465a;
+  --border:     #26262e;
+  --border2:    #32323c;
+  --accent:     #4ade80;
+  --accent-fg:  #0e0e10;
+  --mcd:        #60a5fa;
+  --citizen:    #4ade80;
+
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--bg2);
+  --bg-tertiary: var(--bg3);
+  --text-primary: var(--text);
+  --text-secondary: var(--text2);
+  --text-muted: var(--text3);
+  --border-strong: var(--border2);
+}
+
+[data-theme="civic"] {
+  /* Civic Green — earthy, unique Econode brand */
+  --bg:         #f0f7f4;
+  --bg2:        #ffffff;
+  --bg3:        #e8f4ee;
+  --text:       #0f2922;
+  --text2:      #2d6a4f;
+  --text3:      #74b496;
+  --border:     #c8e6d5;
+  --border2:    #95d5b2;
+  --accent:     #1b4332;
+  --accent-fg:  #ffffff;
+  --mcd:        #1a3560;
+  --citizen:    #1b4332;
+
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--bg2);
+  --bg-tertiary: var(--bg3);
+  --text-primary: var(--text);
+  --text-secondary: var(--text2);
+  --text-muted: var(--text3);
+  --border-strong: var(--border2);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+h1, h2, h3, h4, .font-headline {
+  font-family: var(--font-display);
+}
+
+@layer utilities {
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 25%,
+      var(--bg-primary) 50%,
+      var(--bg-tertiary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+  }
+
+  @keyframes shimmer {
+    to {
+      background-position: 200% center;
+    }
+  }
+
+  .skeleton-card-container {
+    @apply p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden;
+  }
+
+  .skeleton-image {
+    @apply h-40 w-full rounded-lg mb-4;
+  }
+
+  .skeleton-title {
+    @apply h-6 w-3/4 rounded mb-2;
+  }
+
+  .skeleton-text {
+    @apply h-4 rounded mb-2;
+  }
+
+  .skeleton-row {
+    @apply h-12 w-full rounded-lg mb-2;
+  }
+}
+
+/* Leaflet Theme Overrides */
+.leaflet-container {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="light"] .leaflet-control-zoom a,
+[data-theme="civic"] .leaflet-control-zoom a {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="civic"] .leaflet-control-zoom a:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .leaflet-control-zoom a {
+  background: #1c1c22 !important;
+  color: #e8e8f0 !important;
+  border-color: #3f3f46 !important;
+}
+
+[data-theme="dark"] .leaflet-popup-content-wrapper,
+[data-theme="civic"] .leaflet-popup-content-wrapper {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="dark"] .leaflet-popup-tip,
+[data-theme="civic"] .leaflet-popup-tip {
+  background: var(--bg-secondary) !important;
+}
