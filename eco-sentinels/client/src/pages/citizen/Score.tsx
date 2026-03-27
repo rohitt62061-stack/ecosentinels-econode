@@ -1,17 +1,13 @@
-import { useEffect, useState } from 'react';
 import CitizenLayout from '../../components/CitizenLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 import { Award, Lock, Sparkles, Flame, ShieldCheck, Trophy, Star } from 'lucide-react';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { SkeletonCard } from '../../components/Skeleton';
+import { ErrorState, EmptyState } from '../../components/StateFeedback';
 
-interface ScoreData {
-  total_scans: number;
-  correct_scans: number;
-  segregation_score: number;
-  monthly_credits: number;
-  streak_days: number;
-}
+import { CitizenScore } from '../../types/database';
 
 interface LeaderboardItem {
   ward_name: string;
@@ -20,49 +16,90 @@ interface LeaderboardItem {
 }
 
 export default function Score() {
-  const { session } = useAuth();
-  const [score, setScore] = useState<ScoreData | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
+  const { isReady, session } = useAuth();
+  const userId = session?.user?.id;
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchScore();
-      fetchLeaderboard();
-    }
-  }, [session]);
-
-  const fetchScore = async () => {
-    try {
+  // 1. Fetch Score Data
+  const { data: score, isLoading: fetchingScore, error: scoreError, refetch: refetchScore } = useQuery({
+    queryKey: ['citizen-score', userId],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('citizen_scores')
         .select('*')
-        .eq('user_id', session?.user?.id)
+        .eq('user_id', userId)
         .maybeSingle();
-
       if (error) throw error;
-      setScore(data);
-    } catch (err) {
-      console.error("Error fetching score:", err);
-    }
-  };
+      return data as CitizenScore;
+    },
+    enabled: isReady && !!userId,
+    staleTime: 60 * 1000,
+  });
 
-  const fetchLeaderboard = async () => {
-    const { data } = await supabase.from('ward_leaderboard').select('ward_name, citizens, avg_score').limit(5);
-    if (data) setLeaderboard(data);
-  };
+  // 2. Fetch Leaderboard
+  const { data: leaderboard = [], isLoading: fetchingLeaderboard, refetch: refetchLeaderboard } = useQuery({
+    queryKey: ['ward-leaderboard-compact'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('ward_leaderboard').select('ward_name, citizens, avg_score').limit(5);
+      if (error) throw error;
+      return data as LeaderboardItem[];
+    },
+    enabled: isReady,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const fetching = fetchingScore || fetchingLeaderboard;
+  const error = scoreError instanceof Error ? scoreError.message : (scoreError ? "Failed to sync with achievement ledger" : null);
 
   const getBadgeStatus = (badgeId: string) => {
     if (!score) return false;
-    if (badgeId === 'first_scan') return score.total_scans > 0;
-    if (badgeId === 'week_warrior') return score.streak_days >= 7;
-    if (badgeId === 'scans_100') return score.total_scans >= 100;
-    if (badgeId === 'perfect_month') return score.segregation_score > 90 && score.total_scans > 20;
+    const scans = score.total_scans || 0;
+    const streak = score.streak_days || 0;
+    const segScore = score.segregation_score || 0;
+
+    if (badgeId === 'first_scan') return scans > 0;
+    if (badgeId === 'week_warrior') return streak >= 7;
+    if (badgeId === 'scans_100') return scans >= 100;
+    if (badgeId === 'perfect_month') return segScore > 90 && scans > 20;
     return false;
   };
 
+  if (fetching && !score) {
+    return (
+      <CitizenLayout>
+        <div className="flex flex-col h-full bg-[var(--surface)] px-8 pt-8 gap-12">
+           <div className="space-y-2">
+              <div className="w-32 h-3 bg-[var(--surface-container-highest)] rounded animate-pulse" />
+              <div className="w-48 h-8 bg-[var(--surface-container-highest)] rounded animate-pulse" />
+           </div>
+           <div className="mx-4 bg-[var(--surface-container-low)] rounded-[var(--radius-lg)] p-8">
+              <SkeletonCard lines={4} />
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              {[1,2,3,4].map(i => (
+                 <div key={i} className="bg-[var(--surface-container)] rounded-[var(--radius-lg)] h-32 animate-pulse" />
+              ))}
+           </div>
+        </div>
+      </CitizenLayout>
+    );
+  }
+
+  if (error && !score) {
+    return (
+      <CitizenLayout>
+        <div className="flex flex-col items-center justify-center h-full px-8 bg-[var(--surface)]">
+          <ErrorState message={error} onRetry={() => {
+            refetchScore();
+            refetchLeaderboard();
+          }} />
+        </div>
+      </CitizenLayout>
+    );
+  }
+
   const radius = 80;
   const circumference = 2 * Math.PI * radius;
-  const progress = score ? Math.min(score.segregation_score, 100) / 100 : 0;
+  const progress = score ? Math.min(score.segregation_score || 0, 100) / 100 : 0;
   const offset = circumference * (1 - progress);
 
   return (
@@ -104,7 +141,7 @@ export default function Score() {
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-[var(--text-muted)]">Citizen Score</span>
                 <h2 className="text-5xl font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-display)' }}>
-                  {score ? Math.round(score.segregation_score) : 0}
+                  {score ? Math.round(score.segregation_score || 0) : 0}
                 </h2>
                 <div className="flex items-center gap-1 mt-2 text-amber-600 font-bold text-xs">
                   <Sparkles size={12} /> ₹{score ? score.monthly_credits : '0.00'}
@@ -173,31 +210,35 @@ export default function Score() {
             Inter-Ward Standings
           </h3>
           <div className="flex flex-col gap-[0.3rem]">
-            {leaderboard.map((item, index) => (
-              <div 
-                key={index} 
-                className={`flex items-center justify-between p-4 rounded-[var(--radius-md)] ${
-                  index % 2 === 0 ? 'bg-[var(--surface-container-low)]' : 'bg-[var(--surface)]'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-mono text-[var(--text-muted)]">
-                    {(index + 1).toString().padStart(2, '0')}
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold text-[var(--text-primary)]">{item.ward_name}</p>
-                    <p className="text-[9px] font-mono uppercase tracking-widest text-[var(--text-muted)]">
-                      {item.citizens} Nodes Active
-                    </p>
+            {leaderboard.length === 0 ? (
+              <EmptyState message="No inter-ward standing data available" />
+            ) : (
+              leaderboard.map((item, index) => (
+                <div 
+                  key={index} 
+                  className={`flex items-center justify-between p-4 rounded-[var(--radius-md)] ${
+                    index % 2 === 0 ? 'bg-[var(--surface-container-low)]' : 'bg-[var(--surface)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-mono text-[var(--text-muted)]">
+                      {(index + 1).toString().padStart(2, '0')}
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-[var(--text-primary)]">{item.ward_name}</p>
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-[var(--text-muted)]">
+                        {item.citizens} Nodes Active
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-mono)' }}>
+                      {item.avg_score}
+                    </span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm font-bold text-[var(--primary)]" style={{ fontFamily: 'var(--font-mono)' }}>
-                    {item.avg_score}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 

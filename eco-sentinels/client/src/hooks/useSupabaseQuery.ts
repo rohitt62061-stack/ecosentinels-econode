@@ -1,50 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getFromCache, saveToCache } from '../lib/offlineCache';
+
+interface SupabaseResponse<T> {
+  data: T | null;
+  error: any;
+}
 
 export function useSupabaseQuery<T>(
-  queryFn: () => Promise<{ data: T | null; error: any }>, 
+  queryFn: () => Promise<SupabaseResponse<T>>,
+  cacheKey: string,
   deps: any[] = []
 ) {
   const { isReady } = useAuth();
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<T | null>(() => getFromCache(cacheKey));
+  const [loading, setLoading] = useState(!data);
 
   const fetchData = async () => {
-    setLoading(true);
+    if (!isReady) return;
     try {
       const { data, error } = await queryFn();
-      if (error) setError(error);
-      else setData(data);
+      if (!error && data) {
+        setData(data);
+        saveToCache(cacheKey, data);
+      }
     } catch (err) {
-      setError(err);
+      console.error(`Offline Cache Fallback for ${cacheKey}:`, err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!isReady) return;
-    
-    let isMounted = true;
-    
-    queryFn().then(({ data, error }) => {
-      if (isMounted) {
-        if (error) setError(error);
-        else setData(data);
-        setLoading(false);
-      }
-    }).catch(err => {
-      if (isMounted) {
-        setError(err);
-        setLoading(false);
-      }
-    });
+    fetchData();
+  }, [isReady, cacheKey, ...deps]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [isReady, ...deps]);
-
-  return { data, error, loading, setData, refetch: fetchData };
+  return { data, loading, refetch: fetchData };
 }

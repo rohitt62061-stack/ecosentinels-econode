@@ -1,60 +1,47 @@
-# EcoNode Setup Guide & Architecture Docs
+# Econode — Hyper-Local AQI & Circular Waste Intelligence
 
-## Overview
-EcoNode is a dual-mode sentinel system for municipal governance, combining hyper-local AQI monitoring and gamified waste segregation, aligned with the 74th Amendment and Swachh Bharat 2.0.
+**India Innovates 2026 · Urban Solutions · MCD × HN**
 
-*Detailed Design docs available for review in [System Architecture](file:///d:/safebrowser/ecosentinels-econode/eco-sentinels/docs/architecture/system-overview.md)*
+Econode is a dual-mode civic intelligence platform for the Municipal Corporation
+of Delhi (MCD). It provides ward-level air quality monitoring, AI-powered waste
+classification, automated policy recommendations, and a citizen incentive system.
 
-It utilizes a "Split-Brain" architecture:
-- **Edge Node (ESP32)**: Handles local sensors, LEDs, and servos reliably.
-- **Brain (Laptop Server)**: Handles AI inference, webcam feed, and the frontend dashboard.
+## Live Demo
+- **Deployed App**: [Your Vercel URL]
+- **MCD Login**: officer@mcdindia.gov.in / password123
+- **Citizen Login**: Use any Gmail account (Google OAuth)
 
-## Hardware Setup
-Total BOM ~ ₹1,800
-- **ESP32 DevKit V1**: Core controller (₹450)
-- **PMS5003**: PM2.5/PM10 Sensor (₹1,000)
-- **BME280**: Temperature/Humidity (₹150)
-- **MG995 Servo**: Lid actuator (₹150)
-- **WS2812B Ring**: Visual feedback (₹50)
-- **USB Webcam**: Connected *directly* to laptop running the backend
+## Tech Stack
+- **Frontend**: React + TypeScript + Tailwind CSS + Vite
+- **Database**: Supabase (PostgreSQL + PostGIS + Auth + Edge Functions)
+- **AI**: Claude API (waste classification, policy generation, health advisories)
+- **AQI Data**: World Air Quality Index (WAQI) API — real Delhi sensor stations
+- **Maps**: Leaflet.js with OpenStreetMap tiles
+- **Deployment**: Vercel (frontend) + Supabase (backend, always-on)
 
-### Wiring on ESP32
-| Component | ESP32 Pin |
-|-----------|-----------|
-| PMS_RX    | GPIO 16   |
-| PMS_TX    | GPIO 17   |
-| BME_SDA   | GPIO 21   |
-| BME_SCL   | GPIO 22   |
-| SERVO_PWM | GPIO 18   |
-| LED_DATA  | GPIO 19   |
+## Quick Start
+cd eco-sentinels/client
+cp .env.example .env   # Fill in your Supabase and API keys
+npm install
+npm run dev
 
-## Software Setup
+## Features
+### MCD Officer Mode
+- Ward-level AQI heatmap (not city averages)
+- ML source detection: construction dust, biomass burning, vehicle exhaust
+- Automated policy recommendations (AI-generated, officer-approved)
+- Ghost Waste Predictor: predicts illegal burning 12 hours early
+- 72-hour cascade simulation with rupee health cost estimate
+- Fleet route optimization using OSRM
 
-### 1. Firmware (`/firmware`)
-- Open `firmware/econode.ino` in Arduino IDE or PlatformIO.
-- Install necessary libraries (`ESP32Servo`, `Adafruit_NeoPixel`, `Adafruit_BME280`, `ArduinoJson`).
-- **Critical**: Update `ssid`, `password`, and `serverUrl` (IP of your laptop running the backend) at the top of the sketch.
-- Flash to ESP32.
+### Citizen Mode
+- Real-time AQI gauge for your specific ward
+- AI waste classification via camera (Claude Vision API)
+- Phone OTP login (no Gmail required)
+- Eco score, badges, and monthly credits
+- Ward pollution reporting feed
 
-### 2. Backend Server (`/server`)
-- Requires Python 3.9+
-- `cd server`
-- Install requirements: `pip install -r requirements.txt`
-- Run server: `python main.py` or `uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
-- Keep terminal open to view API logs.
+## Team
+[Your team member names and roles]
 
-### 3. Frontend Dashboards (`/client`)
-- Requires Node.js (v18+)
-- `cd client`
-- Install dependencies: `npm install`
-- Start dev server: `npm run dev`
-- **MCD Dashboard**: Navigate to `http://localhost:5173/mcd-dashboard`
-- **Citizen App**: Navigate to `http://localhost:5173/citizen-app`
-
-## Using the System (Demo Flow)
-1. Turn on ESP32. The LED ring should turn Blue once connected to WiFi.
-2. ESP32 automatically starts sending mock/real sensor data to FastAPI.
-3. Open the Citizen App. Click "Scan Waste".
-4. The backend server camera feed (mocked detection logic) will simulate a $>90\%$ confidence "Plastic" detection.
-5. Watch the ESP32: It will receive the `OPEN_LID` command from the server. The Servo will turn 90°, the LED ring will flash Green, and it will close after 3 seconds.
-6. Open the MCD Dashboard. See the live telemetries from your "ward". When AQI crosses 300, a "Deploy Sprinklers (Article 21 Compliance)" policy alert triggers automatically.
+## Built for Viksit Bharat 2047

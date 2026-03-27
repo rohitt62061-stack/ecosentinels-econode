@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import McdLayout from '../../components/McdLayout';
 import { supabase } from '../../utils/supabase';
-import { useSupabaseQuery } from '../../hooks/useSupabaseQuery';
+import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { RefreshCw, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { SkeletonCard, SkeletonTable } from '../../components/Skeleton';
+import { EmptyState } from '../../components/StateFeedback';
+import MlIntelligenceReport from '../../components/mcd/MlIntelligenceReport';
+import { PollutionDetection } from '../../types/database';
 
 // Declare Leaflet global object from CDN
 declare const L: any;
 
-interface WardData {
+interface WardAQIView {
   ward_id: string;
   ward_name: string;
-  ward_number: number;
+  ward_number: number | null;
   latitude: number;
   longitude: number;
   aqi_value: number;
@@ -31,6 +35,11 @@ interface HistoricalAQI {
   aqi_value: number;
 }
 
+interface ForecastPrediction {
+  hour: string;
+  aqi: number;
+}
+
 export default function Wards() {
   const { theme } = useTheme();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -38,26 +47,27 @@ export default function Wards() {
   const tileLayerRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   
-  const [selectedWard, setSelectedWard] = useState<WardData | null>(null);
+  const [selectedWard, setSelectedWard] = useState<WardAQIView | null>(null);
   const [history, setHistory] = useState<HistoricalAQI[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [forecast, setForecast] = useState<any[]>([]);
+  const [forecast, setForecast] = useState<ForecastPrediction[]>([]);
   const [loadingForecast, setLoadingForecast] = useState(false);
-  const [sourceDetection, setSourceDetection] = useState<any | null>(null);
+  const [sourceDetection, setSourceDetection] = useState<PollutionDetection | null>(null);
 
   // 1. Fetch Wards Data
-  const { data: wardsData, loading: loadingWards, refetch: refetchWards } = useSupabaseQuery<WardData[]>(
-    async () => {
+  const { data: wards = [], isLoading: loadingWards, refetch: refetchWards } = useQuery<WardAQIView[]>({
+    queryKey: ['ward-aqi'],
+    queryFn: async () => {
       const { data, error } = await supabase.from('latest_ward_aqi').select('*');
-      return { data: data as WardData[], error };
+      if (error) throw error;
+      return (data as any[]) || [];
     },
-    []
-  );
-  const wards = wardsData || [];
+    staleTime: 60 * 1000,
+  });
 
   const stats = useMemo(() => {
     const counts = { total: wards.length, good: 0, mod: 0, poor: 0, severe: 0 };
-    wards.forEach((w: WardData) => {
+    wards.forEach((w) => {
       if (w.aqi_value <= 50) counts.good++;
       else if (w.aqi_value <= 100) counts.mod++;
       else if (w.aqi_value <= 150) counts.poor++;
@@ -95,20 +105,22 @@ export default function Wards() {
       ]);
 
       if (historyRes.data) {
-        setHistory(historyRes.data.map((d: any) => ({
-          time: new Date(d.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          aqi_value: d.aqi_value
+        setHistory((historyRes.data as any[]).map(d => ({
+          time: d.recorded_at ? new Date(d.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+          aqi_value: d.aqi_value || 0
         })));
       }
       if (forecastRes.data?.predictions) setForecast(forecastRes.data.predictions);
-      setSourceDetection(sourceRes.data);
+      setSourceDetection(sourceRes.data as PollutionDetection | null);
+    } catch (err) {
+      console.error("Fetch Details Error:", err);
     } finally {
       setLoadingHistory(false);
       setLoadingForecast(false);
     }
   };
 
-  const updateMarkers = (data: WardData[]) => {
+  const updateMarkers = (data: WardAQIView[]) => {
     if (!mapInstance.current) return;
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
@@ -148,7 +160,8 @@ export default function Wards() {
       }
     };
 
-    const config = tileConfig[theme as keyof typeof tileConfig] || tileConfig.light;
+    const config = tileConfig[theme] || tileConfig['light'];
+    if (!config) return;
 
     tileLayerRef.current = L.tileLayer(config.url, {
       attribution: config.attribution,
@@ -172,6 +185,7 @@ export default function Wards() {
         if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; }
       };
     }
+    return undefined;
   }, []);
 
   return (
@@ -182,7 +196,11 @@ export default function Wards() {
           <div className="flex items-center gap-6">
             <div>
               <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider font-semibold">Total Wards</p>
-              {loadingWards ? <div className="h-6 w-8 shimmer rounded mt-1" /> : <h4 className="text-xl font-bold font-manrope">{stats.total}</h4>}
+              {loadingWards ? (
+                <div className="h-6 w-8 bg-[var(--bg3)] animate-pulse rounded mt-1" />
+              ) : (
+                <h4 className="text-xl font-bold font-manrope">{stats.total}</h4>
+              )}
             </div>
             <div className="h-8 border-r border-[var(--border)]"></div>
             <div className="flex items-center gap-4">
@@ -232,7 +250,15 @@ export default function Wards() {
               <div>
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-2">24h History</p>
                 <div className="h-40 bg-[var(--bg-tertiary)]/30 border border-[var(--border)] rounded-xl p-2">
-                  {loadingHistory ? <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm shimmer rounded">Loading trend...</div> : (
+                  {loadingHistory ? (
+                    <div className="p-2 h-full">
+                      <SkeletonTable rows={3} />
+                    </div>
+                  ) : history.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <EmptyState message="No historical trend records" />
+                    </div>
+                  ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={history}>
                         <XAxis dataKey="time" hide />
@@ -244,10 +270,26 @@ export default function Wards() {
                 </div>
               </div>
 
+              {selectedWard && (
+                <MlIntelligenceReport 
+                  wardId={selectedWard.ward_id}
+                  wardName={selectedWard.ward_name}
+                  wardNumber={selectedWard.ward_number !== null ? String(selectedWard.ward_number) : 'N/A'}
+                />
+              )}
+
               <div>
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-2">AI Forecast (24h)</p>
                 <div className="h-40 bg-[var(--bg-tertiary)]/20 border border-dotted border-[var(--border)]/50 rounded-xl p-2">
-                  {loadingForecast ? <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm shimmer rounded">Computing forecast...</div> : (
+                  {loadingForecast ? (
+                    <div className="p-2 h-full">
+                      <SkeletonCard lines={2} height="h-3" />
+                    </div>
+                  ) : forecast.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <EmptyState message="AI Forecast Engine Offline" />
+                    </div>
+                  ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={forecast}>
                         <XAxis dataKey="hour" hide />
@@ -264,7 +306,7 @@ export default function Wards() {
                 <div className="flex items-center gap-2">
                     <AlertTriangle size={16} className="text-amber-400" />
                     <span className="text-xs font-semibold text-[var(--text-secondary)]">Pollution Source:</span>
-                    {sourceDetection ? <span className="text-xs font-bold text-amber-500 uppercase">{sourceDetection.source_type.replace('_', ' ')}</span> : <span className="text-xs text-[var(--text-muted)] italic">None Detected</span>}
+                    {sourceDetection ? <span className="text-xs font-bold text-amber-500 uppercase">{(sourceDetection.source_type || 'unknown').replace('_', ' ')}</span> : <span className="text-xs text-[var(--text-muted)] italic">None Detected</span>}
                 </div>
                 <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors mt-2">View Policy <ArrowRight size={14} /></button>
               </div>

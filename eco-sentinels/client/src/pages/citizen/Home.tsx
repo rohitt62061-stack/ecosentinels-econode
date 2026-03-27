@@ -4,26 +4,26 @@ import i18n from '../../i18n/config';
 import CitizenLayout from '../../components/CitizenLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { useAuthGuardedQuery } from '../../hooks/useAuthGuardedQuery';
-import { Heart, Activity, ShieldCheck, RefreshCw, Clock, AlertTriangle, Camera, Megaphone } from 'lucide-react';
+import { useSupabaseQuery } from '../../hooks/useSupabaseQuery';
+import { Heart, Activity, ShieldCheck, Clock, Camera, Megaphone } from 'lucide-react';
 import PollutionReportModal from '../../components/citizen/PollutionReportModal';
 import { getStreamClient, getStreamToken } from '../../utils/stream';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { SkeletonCard } from '../../components/Skeleton';
+import { ErrorState } from '../../components/StateFeedback';
 
-interface AqiData {
-  ward_name: string;
-  aqi_value: number;
-  pm25: number;
-  pm10: number;
-  latitude: number;
-  longitude: number;
-  recorded_at: string;
-}
+import { WardAQIView, AiSuggestion } from '../../types/database';
 
-interface Advisory {
-  id: string;
-  suggestion_text: string;
-  suggestion_type: string;
+interface CommuteAdvice {
+  mode: string;
+  color: string;
+  tip: string;
+  icons: {
+    walk: boolean;
+    cycle: boolean;
+    bus: boolean;
+    metro: boolean;
+  };
 }
 
 export default function Home() {
@@ -47,64 +47,51 @@ export default function Home() {
     setShowOnboarding(false);
   };
 
-  // Auth-Guarded Data Fetching
-  const { data, fetching, refetch } = useAuthGuardedQuery<{
-    aqi: AqiData | null;
-    advisories: Advisory[];
-  }>(async () => {
-    if (!user) return { data: null, error: null };
+  // 1. Fetch Ward Profile
+  const { data: profile } = useSupabaseQuery<{ ward_id: string }>(
+    async () => {
+      if (!user) return { data: null, error: null };
+      const res = await supabase.from('profiles').select('ward_id').eq('id', user.id).maybeSingle();
+      return res as any;
+    },
+    `profile-${user?.id}`
+  );
 
-    // 1. Fetch Profile for ward_id
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('ward_id')
-      .eq('id', user.id)
-      .single();
+  const wardId = profile?.ward_id || "662ae969-067a-4b6b-a0b3-ac28cc665fe9";
 
-    let targetWardId = profile?.ward_id;
+  // 2. Fetch Latest AQI
+  const { data: aqi, loading: fetchingAqi, refetch: refetchAqi } = useSupabaseQuery<WardAQIView>(
+    async () => {
+      const res = await supabase.from('latest_ward_aqi').select('*').eq('ward_id', wardId).maybeSingle();
+      return res as any;
+    },
+    `latest-aqi-${wardId}`,
+    [wardId]
+  );
 
-    // Fallback logic
-    if (!targetWardId) {
-      const { data: fallbackWards } = await supabase
-        .from('latest_ward_aqi')
-        .select('ward_id')
-        .limit(1);
-      if (fallbackWards && fallbackWards.length > 0) {
-        targetWardId = fallbackWards[0].ward_id;
-      }
-    }
+  // 3. Fetch AI Advisories
+  const { data: advisories, loading: fetchingAdvisories, refetch: refetchAdvisories } = useSupabaseQuery<AiSuggestion[]>(
+    async () => {
+      const res = await supabase.from('ai_suggestions').select('*').eq('ward_id', wardId).limit(3);
+      return { data: res.data || [], error: res.error };
+    },
+    `ai-advisories-${wardId}`,
+    [wardId]
+  );
 
-    if (!targetWardId) return { data: { aqi: null, advisories: [] }, error: null };
-
-    // 2. Fetch Latest AQI & Advisories in parallel
-    const [aqiRes, adviceRes] = await Promise.all([
-      supabase.from('latest_ward_aqi').select('*').eq('ward_id', targetWardId).single(),
-      supabase.from('ai_suggestions').select('id, suggestion_text, suggestion_type').eq('ward_id', targetWardId).limit(3)
-    ]);
-
-    return { 
-      data: { 
-        aqi: aqiRes.data as AqiData, 
-        advisories: (adviceRes.data || []) as Advisory[]
-      }, 
-      error: aqiRes.error 
-    };
-  }, [user?.id]);
-
-  const aqi = data?.aqi;
-  const advisories = data?.advisories || [];
+  const fetching = fetchingAqi || fetchingAdvisories;
+  const refetch = () => { refetchAqi(); refetchAdvisories(); };
 
   // Auto-Refresh
   useEffect(() => {
-    if (isReady && user) {
-      const refreshInterval = setInterval(refetch, 5 * 60 * 1000); // 5 mins
-      const timeInterval = setInterval(() => setMinutesAgo(prev => prev + 1), 60 * 1000);
-      return () => {
-        clearInterval(refreshInterval);
-        clearInterval(timeInterval);
-      };
-    }
-  }, [isReady, user]);
+    if (!isReady || !user) return;
+    const refreshInterval = setInterval(refetch, 5 * 60 * 1000); // 5 mins
+    const timeInterval = setInterval(() => setMinutesAgo(prev => prev + 1), 60 * 1000);
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(timeInterval);
+    };
+  }, [isReady, user, refetch]);
 
   const getAQIColor = (aqi: number) => {
     if (aqi <= 50) return '#16a34a';
@@ -124,7 +111,7 @@ export default function Home() {
     return 'Hazardous';
   };
 
-  const getCommuteAdvice = (aqi: number, hour: number) => {
+  const getCommuteAdvice = (aqi: number, hour: number): CommuteAdvice => {
     const isRushHour = (hour >= 7 && hour <= 10) || (hour >= 17 && hour <= 20);
     
     if (aqi <= 50) return { 
@@ -207,28 +194,24 @@ export default function Home() {
         <div className="max-width-mobile mx-auto h-full flex flex-col bg-[var(--bg-primary)] px-4 pt-4 gap-6 overflow-hidden">
            <div className="flex items-center justify-between">
               <div className="space-y-2">
-                 <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
-                 <div className="w-32 h-5 bg-[var(--bg-tertiary)] rounded shimmer" />
+                 <div className="w-24 h-3 bg-[var(--bg3)] rounded animate-pulse" />
+                 <div className="w-32 h-5 bg-[var(--bg3)] rounded animate-pulse" />
               </div>
-              <div className="w-16 h-6 bg-[var(--bg-tertiary)] rounded shimmer" />
+              <div className="w-16 h-6 bg-[var(--bg3)] rounded animate-pulse" />
            </div>
            <div className="flex justify-center py-6">
               <div className="w-60 h-60 rounded-full border-8 border-[var(--bg-secondary)] flex flex-col items-center justify-center">
-                 <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded mb-2 shimmer" />
-                 <div className="w-20 h-12 bg-[var(--bg-tertiary)] rounded mb-2 shimmer" />
-                 <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded shimmer" />
+                 <div className="w-12 h-3 bg-[var(--bg3)] rounded mb-2 animate-pulse" />
+                 <div className="w-20 h-12 bg-[var(--bg3)] rounded mb-2 animate-pulse" />
+                 <div className="w-16 h-5 bg-[var(--bg3)] rounded animate-pulse" />
               </div>
            </div>
-           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 h-24 flex flex-col gap-2">
-              <div className="w-24 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
-              <div className="w-full h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
-              <div className="w-3/4 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
-           </div>
+           <SkeletonCard lines={3} />
            <div className="grid grid-cols-2 gap-3">
-              {[1,2,3,4].map(i => (
-                 <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] p-4 rounded-xl h-20 flex flex-col gap-2">
-                    <div className="w-12 h-3 bg-[var(--bg-tertiary)] rounded shimmer" />
-                    <div className="w-16 h-5 bg-[var(--bg-tertiary)] rounded shimmer" />
+              {[1, 2, 3, 4].map(i => (
+                 <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] p-4 rounded-xl h-24">
+                   <div className="w-12 h-3 bg-[var(--bg3)] rounded mb-2 animate-pulse" />
+                   <div className="w-20 h-5 bg-[var(--bg3)] rounded animate-pulse" />
                  </div>
               ))}
            </div>
@@ -240,19 +223,11 @@ export default function Home() {
   if (!aqi) {
     return (
       <CitizenLayout>
-        <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] text-center px-6 gap-4 bg-[var(--bg-primary)]">
-          <AlertTriangle size={48} className="text-amber-500" />
-          <div>
-             <p className="font-bold text-[var(--text-primary)]">Data Unavailable</p>
-             <p className="text-xs text-[var(--text-muted)]">Failed to fetch local AQI metrics.</p>
-          </div>
-          <button 
-            onClick={() => refetch()}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-all"
-          >
-             <RefreshCw size={14} className={fetching ? 'animate-spin' : ''} />
-             Tap to Retry
-          </button>
+        <div className="flex flex-col items-center justify-center h-full px-6 bg-[var(--bg-primary)]">
+          <ErrorState 
+            message="Data Link Severed: Your local ward telemetry is offline" 
+            onRetry={refetch} 
+          />
         </div>
       </CitizenLayout>
     );
@@ -270,7 +245,7 @@ export default function Home() {
           <div>
             <p className="text-xs text-[var(--text-muted)]">{t('citizen.ward_label')}</p>
             <h3 className="font-bold text-lg flex items-center gap-1" style={{ fontFamily: 'var(--font-display)' }}>
-              📍 {aqi.ward_name}, Delhi
+              📍 {aqi?.ward_name || 'N/A'}, Delhi
             </h3>
           </div>
           <div className="flex items-center gap-3">
@@ -319,7 +294,7 @@ export default function Home() {
             <div className="absolute inset-0 flex flex-col items-center justify-center transform rotate-0 mt-3">
               <span className="text-xs uppercase text-[var(--text-muted)] font-semibold tracking-wider">{t('citizen.aqi_label')}</span>
               <h1 className="text-6xl font-black font-manrope tracking-tighter" style={{ color }}>
-                {aqi.aqi_value}
+                {aqi?.aqi_value || 0}
               </h1>
               <span className="text-sm font-bold mt-1 px-3 py-0.5 rounded-full" style={{ backgroundColor: `${color}20`, color }}>
                 {category}
@@ -335,21 +310,22 @@ export default function Home() {
               <ShieldCheck size={16} style={{ color }} /> {t('citizen.advisory_title')}
             </h4>
             <ul className="space-y-2">
-              {advisories.length > 0 ? (
-                advisories.flatMap((advice) => {
-                  let tips = [];
+              {(advisories ?? []).length > 0 ? (
+                (advisories ?? []).flatMap((advice) => {
+                  let tips: string[] = [];
                   try {
-                    const parsed = JSON.parse(advice.suggestion_text);
+                    const text = advice.suggestion_text || '[]';
+                    const parsed = JSON.parse(text);
                     // Check if bilingual format: [{'en': '...', 'hi': '...'}]
                     if (Array.isArray(parsed) && typeof parsed[0] === 'object') {
                       tips = parsed.map(item => item[i18n.language] || item['en']);
                     } else if (Array.isArray(parsed)) {
                       tips = parsed;
                     } else {
-                      tips = [advice.suggestion_text];
+                      tips = [advice.suggestion_text || ''];
                     }
                   } catch (e) {
-                    tips = [advice.suggestion_text];
+                    tips = [advice.suggestion_text || ''];
                   }
                   return tips.map((tip: string, index: number) => (
                     <li key={`${advice.id}-${index}`} className="text-xs text-[var(--text-muted)] flex items-start gap-1.5">
@@ -403,7 +379,8 @@ export default function Home() {
                   { id: 'bus', label: 'Bus', icon: '🚌' },
                   { id: 'metro', label: 'Metro', icon: '🚇' }
                 ].map(item => {
-                  const isEnabled = (getCommuteAdvice(aqi.aqi_value, new Date().getHours()).icons as any)[item.id];
+                  const advice = getCommuteAdvice(aqi.aqi_value, new Date().getHours());
+                  const isEnabled = advice.icons[item.id as keyof typeof advice.icons];
                   return (
                     <div key={item.id} className={`flex flex-col items-center gap-1 ${isEnabled ? 'opacity-100' : 'opacity-20 grayscale'}`}>
                        <span className="text-xl">{item.icon}</span>
@@ -445,7 +422,7 @@ export default function Home() {
               <span className="text-xs">PM 2.5</span>
             </div>
             <p className="text-lg font-bold">
-              {aqi.pm25.toFixed(1)} <span className="text-xs text-[var(--text-muted)] font-normal">µg/m³</span>
+              {aqi?.pm25?.toFixed(1) || '0.0'} <span className="text-xs text-[var(--text-muted)] font-normal">µg/m³</span>
             </p>
           </div>
           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl">
@@ -454,7 +431,7 @@ export default function Home() {
               <span className="text-xs">PM 10</span>
             </div>
             <p className="text-lg font-bold">
-              {aqi.pm10.toFixed(1)} <span className="text-xs text-[var(--text-muted)] font-normal">µg/m³</span>
+              {aqi?.pm10?.toFixed(1) || '0.0'} <span className="text-xs text-[var(--text-muted)] font-normal">µg/m³</span>
             </p>
           </div>
           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl flex flex-col justify-center">

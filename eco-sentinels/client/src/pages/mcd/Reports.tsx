@@ -1,50 +1,83 @@
 import { useState, useMemo } from 'react';
 import McdLayout from '../../components/McdLayout';
 import { supabase } from '../../utils/supabase';
-import { useAuthGuardedQuery } from '../../hooks/useAuthGuardedQuery';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../../context/AuthContext';
 import { BarChart3, TrendingUp, Users, Leaf, Download, RefreshCw, FileText } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, Legend, ComposedChart } from 'recharts';
 import MlIntelligenceReport from '../../components/mcd/MlIntelligenceReport';
+import { SkeletonTable } from '../../components/Skeleton';
+import { ErrorState, EmptyState } from '../../components/StateFeedback';
+import { WasteEvent, FleetRoute, WardLeaderboard, AqiReading, Ward } from '../../types/database';
+
+interface AggregatedReportData {
+  events: WasteEvent[];
+  routes: FleetRoute[];
+  leaderboard: WardLeaderboard[];
+  currentAqi: AqiReading[];
+  historicalAqi: AqiReading[];
+  wardInfo: Ward | null;
+}
+
+interface WasteGroup {
+  date: string;
+  biodegradable: number;
+  recyclable: number;
+  hazardous: number;
+  [key: string]: string | number;
+}
+
+interface FleetGroup {
+  date: string;
+  distance: number;
+  emissionsSaved: number;
+}
+
+interface YoYAQI {
+  day: string;
+  current: number;
+  historical: number;
+  currentCount: number;
+  historicalCount: number;
+}
 
 export default function Reports() {
+  const { isReady } = useAuth();
   const [filter, setFilter] = useState<'week' | 'month' | 'year'>('month');
   const [generating, setGenerating] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Auth-Guarded Data Fetching
-  const { data: rawData, fetching } = useAuthGuardedQuery<{
-    events: any[];
-    routes: any[];
-    leaderboard: any[];
-    currentAqi: any[];
-    historicalAqi: any[];
-    wardInfo: any;
-  }>(async () => {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const oneYearAgoStart = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000 - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const oneYearAgoEnd = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+  // TanStack Query for Aggregated Report Data
+  const { data: rawData, isLoading: fetching, error: errorReports, refetch: refetchReports } = useQuery<AggregatedReportData>({
+    queryKey: ['report-data', filter],
+    queryFn: async () => {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const oneYearAgoStart = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000 - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const oneYearAgoEnd = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [eventsRes, routesRes, boardsRes, currentAqiRes, historicalAqiRes, wardRes] = await Promise.all([
-      supabase.from('waste_events').select('scanned_at, waste_category, user_id'),
-      supabase.from('fleet_routes').select('captured_at, total_distance'),
-      supabase.from('ward_leaderboard').select('*').limit(6),
-      supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', sevenDaysAgo),
-      supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', oneYearAgoStart).lt('recorded_at', oneYearAgoEnd),
-      supabase.from('wards').select('id, ward_name, ward_number').limit(1).single()
-    ]);
+      const [eventsRes, routesRes, boardsRes, currentAqiRes, historicalAqiRes, wardRes] = await Promise.all([
+        supabase.from('waste_events').select('scanned_at, waste_category, user_id'),
+        supabase.from('fleet_routes').select('route_date, total_distance_km'),
+        supabase.from('ward_leaderboard').select('*').limit(6),
+        supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', sevenDaysAgo),
+        supabase.from('aqi_readings').select('aqi_value, recorded_at').gt('recorded_at', oneYearAgoStart).lt('recorded_at', oneYearAgoEnd),
+        supabase.from('wards').select('id, ward_name, ward_number').limit(1).maybeSingle()
+      ]);
 
-    return {
-      data: {
-        events: eventsRes.data || [],
-        routes: routesRes.data || [],
-        leaderboard: boardsRes.data || [],
-        currentAqi: currentAqiRes.data || [],
-        historicalAqi: historicalAqiRes.data || [],
-        wardInfo: wardRes.data
-      },
-      error: eventsRes.error || routesRes.error || boardsRes.error || wardRes.error
-    };
-  }, [filter]);
+      if (eventsRes.error) throw eventsRes.error;
+      
+      return {
+        events: (eventsRes.data as any[]) || [],
+        routes: (routesRes.data as any[]) || [],
+        leaderboard: (boardsRes.data as any[]) || [],
+        currentAqi: (currentAqiRes.data as any[]) || [],
+        historicalAqi: (historicalAqiRes.data as any[]) || [],
+        wardInfo: wardRes.data as Ward | null
+      };
+    },
+    enabled: isReady,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const kpis = useMemo(() => {
     const events = rawData?.events || [];
@@ -56,7 +89,7 @@ export default function Reports() {
 
     let sumCo2 = 0;
     routes.forEach(r => {
-      const dist = r.total_distance || 0;
+      const dist = r.total_distance_km || 0;
       sumCo2 += Math.max(0, (60 - dist) * 0.21);
     });
 
@@ -73,52 +106,63 @@ export default function Reports() {
     const routes = rawData?.routes || [];
 
     // Group Waste
-    const groupedWaste: Record<string, any> = {};
+    const groupedWaste: Record<string, WasteGroup> = {};
     events.forEach(e => {
-       const date = new Date(e.scanned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+       const date = e.scanned_at ? new Date(e.scanned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
        if (!groupedWaste[date]) groupedWaste[date] = { date, biodegradable: 0, recyclable: 0, hazardous: 0 };
-       groupedWaste[date][e.waste_category] = (groupedWaste[date][e.waste_category] || 0) + 0.5;
+       const category = e.waste_category || 'biodegradable';
+       const current = groupedWaste[date]!;
+       current[category] = Number(current[category] || 0) + 0.5;
     });
 
     // Group Fleet
-    const groupedFleet: Record<string, any> = {};
+    const groupedFleet: Record<string, FleetGroup> = {};
     routes.forEach(r => {
-        const dist = r.total_distance || 0;
+        const dist = r.total_distance_km || 0;
         const saved = Math.max(0, (60 - dist) * 0.21);
-        const date = new Date(r.captured_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const date = r.route_date ? new Date(r.route_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
         if (!groupedFleet[date]) groupedFleet[date] = { date, distance: 0, emissionsSaved: 0 };
-        groupedFleet[date].distance += dist;
-        groupedFleet[date].emissionsSaved += saved;
+        const current = groupedFleet[date]!;
+        current.distance += dist;
+        current.emissionsSaved += saved;
     });
 
-    // Group YoY AQI (7-day rolling average style)
-    const yoyData: Record<string, any> = {};
+    // Group YoY AQI
+    const yoyData: Record<string, YoYAQI> = {};
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
-    // Use a fixed set of days for the chart
     days.forEach(day => {
       yoyData[day] = { day, current: 0, historical: 0, currentCount: 0, historicalCount: 0 };
     });
 
     (rawData?.currentAqi || []).forEach(r => {
-      const day = days[new Date(r.recorded_at).getDay()];
-      yoyData[day].current += r.aqi_value;
-      yoyData[day].currentCount += 1;
+      if (r.recorded_at) {
+        const day = days[new Date(r.recorded_at).getDay()];
+        if (day && yoyData[day]) {
+          const d = yoyData[day]!;
+          d.current += r.aqi_value || 0;
+          d.currentCount += 1;
+        }
+      }
     });
 
     (rawData?.historicalAqi || []).forEach(r => {
-      const day = days[new Date(r.recorded_at).getDay()];
-      yoyData[day].historical += r.aqi_value;
-      yoyData[day].historicalCount += 1;
+      if (r.recorded_at) {
+        const day = days[new Date(r.recorded_at).getDay()];
+        if (day && yoyData[day]) {
+          const d = yoyData[day]!;
+          d.historical += r.aqi_value || 0;
+          d.historicalCount += 1;
+        }
+      }
     });
 
-    const comparison = Object.values(yoyData).map((d: any) => ({
+    const comparison = Object.values(yoyData).map((d) => ({
       day: d.day,
       current: d.currentCount ? Math.round(d.current / d.currentCount) : 0,
       historical: d.historicalCount ? Math.round(d.historical / d.historicalCount) : 0,
     }));
 
-    // Calculate improvement percentage
     const avgCurrent = comparison.reduce((acc, d) => acc + d.current, 0) / (comparison.filter(d => d.current > 0).length || 1);
     const avgHistorical = comparison.reduce((acc, d) => acc + d.historical, 0) / (comparison.filter(d => d.historical > 0).length || 1);
     const improvement = avgHistorical > 0 ? Math.round(((avgHistorical - avgCurrent) / avgHistorical) * 100) : 0;
@@ -139,11 +183,8 @@ export default function Reports() {
       setGenerating(true);
       setShowModal(true);
       
-      // Get a ward_id (for now we use the first one we find or a default)
-      const { data: wards } = await supabase.from('wards').select('id').limit(1);
-      const wardId = wards?.[0]?.id;
-      
-      if (!wardId) throw new Error("No wards found to generate report.");
+      const wardId = rawData?.wardInfo?.id;
+      if (!wardId) throw new Error("No ward info found to generate report.");
 
       const { data, error } = await supabase.functions.invoke('generate-ward-report', {
         body: { ward_id: wardId }
@@ -151,8 +192,9 @@ export default function Reports() {
 
       if (error) throw error;
       setReportData(data);
-    } catch (err: any) {
-      alert("Error generating report: " + err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      alert("Error generating report: " + msg);
       setShowModal(false);
     } finally {
       setGenerating(false);
@@ -303,9 +345,17 @@ export default function Reports() {
               <span className="text-2xl font-black text-emerald-400">-{chartsData.improvement}%</span>
             </div>
           </div>
-
+          
           <div className="h-72">
-            {fetching ? <div className="w-full h-full shimmer rounded" /> : (
+            {fetching ? (
+              <div className="w-full h-full p-4">
+                <SkeletonTable rows={5} />
+              </div>
+            ) : errorReports ? (
+              <ErrorState message="Central Ledger Sync Failed" onRetry={refetchReports} />
+            ) : chartsData.yoy.length === 0 ? (
+              <EmptyState message="No comparative AQI data available for this period" />
+            ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartsData.yoy}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -315,18 +365,21 @@ export default function Reports() {
                     contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                     cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
                     content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
+                      if (active && payload && payload.length >= 2) {
+                        const day = payload[0]?.payload?.day;
+                        const curr = payload[0]?.value;
+                        const hist = payload[1]?.value;
                         return (
                           <div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-xl shadow-xl">
-                            <p className="text-xs font-bold text-[var(--text-primary)] mb-2">{payload[0].payload.day}</p>
+                            <p className="text-xs font-bold text-[var(--text-primary)] mb-2">{day}</p>
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center justify-between gap-4">
                                 <span className="text-[10px] text-[var(--text-muted)]">Current Year</span>
-                                <span className="text-sm font-bold text-emerald-400">{payload[0].value}</span>
+                                <span className="text-sm font-bold text-emerald-400">{curr}</span>
                               </div>
                               <div className="flex items-center justify-between gap-4">
                                 <span className="text-[10px] text-[var(--text-muted)]">Last Year</span>
-                                <span className="text-sm font-bold text-slate-400">{payload[1].value}</span>
+                                <span className="text-sm font-bold text-slate-400">{hist}</span>
                               </div>
                             </div>
                             <p className="text-[10px] text-[var(--text-muted)] mt-2 pt-2 border-t border-[var(--border)] leading-tight italic">
@@ -385,7 +438,7 @@ export default function Reports() {
             <MlIntelligenceReport 
               wardId={rawData.wardInfo.id}
               wardName={rawData.wardInfo.ward_name}
-              wardNumber={rawData.wardInfo.ward_number}
+              wardNumber={String(rawData.wardInfo.ward_number || 0)}
             />
           )}
         </div>
@@ -400,7 +453,11 @@ export default function Reports() {
             <div key={k.label} className="bg-[var(--bg-secondary)]/40 border border-[var(--border)] p-4 rounded-xl flex flex-col gap-1 hover:border-[var(--border-strong)] transition-colors">
               <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wide">{k.label}</span>
               <div className="flex items-center justify-between mt-1">
-                {fetching ? <div className="h-8 w-16 shimmer rounded" /> : <h2 className="text-2xl font-black text-[var(--text-primary)]">{k.value}</h2>}
+                {fetching ? (
+                  <div className="h-8 w-16 bg-[var(--bg3)] animate-pulse rounded" />
+                ) : (
+                  <h2 className="text-2xl font-black text-[var(--text-primary)]">{k.value}</h2>
+                )}
                 <k.icon size={20} className={k.color} />
               </div>
             </div>

@@ -3,23 +3,26 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Camera, Award } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useAuthGuardedQuery } from '../hooks/useAuthGuardedQuery';
+import { useQuery } from '@tanstack/react-query';
 
 export default function CitizenLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isReady } = useAuth();
   const isPreview = location.search.includes('preview=true');
 
-  const { data: aqiData } = useAuthGuardedQuery<number>(async () => {
-    if (!user) return { data: 0, error: null };
-    const { data: profile } = await supabase.from('profiles').select('ward_id').eq('id', user.id).single();
-    const wardId = profile?.ward_id;
-    if (!wardId) return { data: 0, error: null };
-    const { data: aqi } = await supabase.from('latest_ward_aqi').select('aqi_value').eq('ward_id', wardId).single();
-    return { data: aqi?.aqi_value || 0, error: null };
-  }, [user?.id]);
-
-  const aqiValue = aqiData || 0;
+  const { data: aqiValue = 0 } = useQuery({
+    queryKey: ['citizen-tint-aqi', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data: profile } = await supabase.from('profiles').select('ward_id').eq('id', user.id).maybeSingle();
+      const wardId = profile?.ward_id;
+      if (!wardId) return 0;
+      const { data: aqi } = await supabase.from('latest_ward_aqi').select('aqi_value').eq('ward_id', wardId).maybeSingle();
+      return aqi?.aqi_value || 0;
+    },
+    enabled: isReady && !!user,
+    staleTime: 5 * 60 * 1000,
+  });
 
   function getAQITint(aqi: number): string {
     if (aqi <= 0) return 'transparent';

@@ -9,33 +9,24 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { 
-  AlertTriangle, Download, Zap, Target
+  AlertTriangle, Download, Target
 } from 'lucide-react';
 import CitizenReportsPanel from '../../components/mcd/CitizenReportsPanel';
 import { SkeletonCard, SkeletonTable } from '../../components/Skeleton';
 import { ErrorState, EmptyState } from '../../components/StateFeedback';
+import { Ward, AqiReading, PollutionDetection } from '../../types/database';
 
-interface Ward {
-  id: string;
-  ward_name: string;
-}
-
-interface Reading {
+interface DashboardReading {
   recorded_at: string;
   aqi_value: number;
   pm25: number;
   pm10: number;
   no2: number;
   so2: number;
-  co?: number;
 }
 
-interface Alert {
-  id: string;
-  ward_id: string;
-  source_type: string;
-  detected_at: string;
-  wards: { ward_name: string };
+interface DashboardAlert extends PollutionDetection {
+  wards: { ward_name: string } | null;
 }
 
 const formatXAxis = (tickItem: string, timeRange: string) => {
@@ -50,17 +41,17 @@ export default function Dashboard() {
   const [pollutant, setPollutant] = useState<'aqi' | 'pm25' | 'pm10' | 'no2' | 'so2'>('aqi');
   
   // 1. Fetch Wards
-  const { data: wardsData } = useSupabaseQuery<Ward[]>(
+  const { data: wards = [], loading: loadingWards } = useSupabaseQuery<Pick<Ward, 'id' | 'ward_name'>[]>(
     async () => {
       const { data, error } = await supabase.from('wards').select('id, ward_name').order('ward_name');
-      return { data: data as Ward[], error };
+      return { data: data || [], error };
     },
-    []
+    'wards'
   );
 
   // 2. Fetch Alerts (Last 6 hours)
   const sixHoursAgo = useMemo(() => new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), []);
-  const { data: alertsData, loading: loadingAlerts, error: errorAlerts, refetch: refetchAlerts } = useSupabaseQuery<Alert[]>(
+  const { data: alerts = [], loading: loadingAlerts } = useSupabaseQuery<DashboardAlert[]>(
     async () => {
       const { data, error } = await supabase
         .from('pollution_detections')
@@ -68,18 +59,16 @@ export default function Dashboard() {
         .eq('policy_triggered', true)
         .gt('detected_at', sixHoursAgo)
         .order('detected_at', { ascending: false });
-      return { data: data as unknown as Alert[], error };
+      return { data: (data as any) || [], error };
     },
-    [sixHoursAgo]
+    `pollution-alerts-${sixHoursAgo}`
   );
 
-  const wards = useMemo(() => wardsData || [], [wardsData]);
-  const alerts = useMemo(() => alertsData || [], [alertsData]);
-
-  // 3. Fetch Readings (Chart Data)
+  // Handle initial ward selection
   useEffect(() => {
-    if (wards.length > 0 && !selectedWard) {
-      setSelectedWard(wards[0].id);
+    const firstWard = wards[0];
+    if (firstWard && !selectedWard) {
+      setSelectedWard(firstWard.id);
     }
   }, [wards, selectedWard]);
 
@@ -92,29 +81,38 @@ export default function Dashboard() {
     return d.toISOString();
   }, [timeRange]);
 
-  const { data: readingsData, loading: loadingReadings } = useSupabaseQuery<Reading[]>(
+  // 3. Fetch Readings (Chart Data)
+  const { data: readings = [], loading: loadingReadings } = useSupabaseQuery<DashboardReading[]>(
     async () => {
-      const targetWard = selectedWard || (wards.length > 0 ? wards[0].id : null);
-      if (!targetWard) return Promise.resolve({ data: [], error: null });
-      
+      if (!selectedWard) return { data: [], error: null };
       const { data, error } = await supabase
         .from('aqi_readings')
         .select('recorded_at, aqi_value, pm25, pm10, no2, so2')
-        .eq('ward_id', targetWard)
+        .eq('ward_id', selectedWard)
         .gt('recorded_at', pastDate)
         .order('recorded_at', { ascending: true });
-      return { data: data as Reading[], error };
+        
+      const formatted = (data as any[])?.map(r => ({
+        recorded_at: r.recorded_at,
+        aqi_value: r.aqi_value || 0,
+        pm25: r.pm25 || 0,
+        pm10: r.pm10 || 0,
+        no2: r.no2 || 0,
+        so2: r.so2 || 0
+      })) || [];
+      
+      return { data: formatted, error };
     },
-    [selectedWard, pastDate, wards.length]
+    `ward-readings-${selectedWard}-${timeRange}`,
+    [selectedWard, timeRange]
   );
 
-  const readings = useMemo(() => readingsData || [], [readingsData]);
-
   const stats = useMemo(() => {
-    if (readings.length === 0) return { avg: 0, peak: null, lowest: 0 };
+    const data = readings ?? [];
+    if (data.length === 0) return { avg: 0, peak: null as number | null, lowest: 0 };
     const key = pollutant === 'aqi' ? 'aqi_value' : pollutant;
-    const values = readings.map(r => r[key as keyof Reading] as number).filter(v => v !== null);
-    if (values.length === 0) return { avg: 0, peak: null, lowest: 0 };
+    const values = data.map(r => r[key as keyof DashboardReading] as number).filter(v => v !== null);
+    if (values.length === 0) return { avg: 0, peak: null as number | null, lowest: 0 };
     return { 
       avg: Math.round(values.reduce((a, b) => a + b, 0) / values.length),
       peak: Math.max(...values),
@@ -123,9 +121,10 @@ export default function Dashboard() {
   }, [readings, pollutant]);
 
   const downloadCSV = () => {
-    if (readings.length === 0) return;
+    const data = readings ?? [];
+    if (data.length === 0) return;
     const headers = ['Timestamp', 'AQI', 'PM25', 'PM10', 'NO2', 'SO2'];
-    const rows = readings.map(r => [
+    const rows = data.map(r => [
       new Date(r.recorded_at).toLocaleString(),
       r.aqi_value, r.pm25, r.pm10, r.no2, r.so2
     ]);
@@ -160,7 +159,7 @@ export default function Dashboard() {
                 onChange={(e) => setSelectedWard(e.target.value)}
                 className="bg-[var(--surface-container-low)] text-[var(--text-primary)] px-4 py-2 rounded-[var(--radius-md)] text-xs font-mono border-none outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all"
               >
-                {wards.map(w => <option key={w.id} value={w.id}>{w.ward_name}</option>)}
+                {(wards ?? []).map(w => <option key={w.id} value={w.id}>{w.ward_name}</option>)}
               </select>
 
               <div className="flex bg-[var(--surface-container-low)] rounded-[var(--radius-md)] p-1">
@@ -258,7 +257,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={readings}>
+                    <LineChart data={readings ?? []}>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-container-highest)" vertical={false} opacity={0.1} />
                       <XAxis 
                         dataKey="recorded_at" 
@@ -313,22 +312,20 @@ export default function Dashboard() {
                 </div>
 
                 <div className="space-y-4 flex-1 overflow-y-auto">
-                  {loadingAlerts ? (
+                  {loadingAlerts && (alerts ?? []).length === 0 ? (
                     <div className="space-y-3">
                       <SkeletonCard lines={2} />
                       <SkeletonCard lines={2} />
                       <SkeletonCard lines={2} />
                     </div>
-                  ) : errorAlerts ? (
-                    <ErrorState message="Protocol Link Failure" onRetry={refetchAlerts} />
-                  ) : alerts.length > 0 ? (
-                    alerts.map(a => (
+                  ) : (alerts ?? []).length > 0 ? (
+                    (alerts ?? []).map(a => (
                       <div key={a.id} className="p-4 bg-[var(--surface)] rounded-[var(--radius-md)] relative overflow-hidden group hover:shadow-[var(--shadow-ambient)] transition-all">
                         <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-rose-600 opacity-50"></div>
                         <div className="flex justify-between items-start mb-2">
-                          <span className="text-[10px] font-bold text-[var(--text-primary)]">{a.wards?.ward_name}</span>
+                          <span className="text-[10px] font-bold text-[var(--text-primary)]">{a.wards?.ward_name || 'N/A'}</span>
                           <span className="text-[9px] font-mono text-[var(--text-muted)]">
-                            {new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {a.detected_at ? new Date(a.detected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">

@@ -2,9 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import CitizenLayout from '../../components/CitizenLayout';
 import { supabase } from '../../utils/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Camera, Sparkles, X, Search, Zap } from 'lucide-react';
 import { algoliasearch } from 'algoliasearch';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { SkeletonCard } from '../../components/Skeleton';
+import { ErrorState } from '../../components/StateFeedback';
 
 const algoliaClient = algoliasearch(
   import.meta.env.VITE_ALGOLIA_APP_ID,
@@ -27,11 +30,10 @@ interface AlgoliaHit {
 
 export default function Waste() {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const [image, setImage] = useState<string | null>(null);
   const [itemName, setItemName] = useState('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Classification | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [showPoints, setShowPoints] = useState(false);
   
   // Algolia State
@@ -63,7 +65,7 @@ export default function Waste() {
 
     searchTimeout.current = setTimeout(async () => {
       try {
-        const { results } = await algoliaClient.search({
+        const response = await algoliaClient.search({
           requests: [{
             indexName: 'waste-items',
             query: itemName,
@@ -71,7 +73,7 @@ export default function Waste() {
           }]
         });
         
-        const hits = (results[0] as any).hits as AlgoliaHit[];
+        const hits = (response.results[0] as any).hits as AlgoliaHit[];
         setSuggestions(hits);
         setShowDropdown(hits.length > 0);
       } catch (err) {
@@ -96,42 +98,36 @@ export default function Waste() {
     setTimeout(() => setShowPoints(true), 300);
   };
 
-  const classifyWaste = async () => {
-    if (!image && !itemName) return;
-    setLoading(true);
-    setError(null);
-    setShowPoints(false);
-
-    try {
-      // 1. Check Algolia first if we have a name but no result yet
+  // TanStack Mutation for Waste Classification
+  const classificationMutation = useMutation({
+    mutationFn: async () => {
+      if (!image && !itemName) return null;
+      
+      // 1. Check Algolia first
       if (itemName && !result) {
-        const { results } = await algoliaClient.search({
+        const response = await algoliaClient.search({
           requests: [{
             indexName: 'waste-items',
             query: itemName,
             hitsPerPage: 1
           }]
         });
-        const hit = (results[0] as any).hits[0] as AlgoliaHit;
+        const hit = (response.results[0] as any).hits[0] as AlgoliaHit;
         
-        // Exact or very close match
         if (hit && hit.name.toLowerCase() === itemName.toLowerCase()) {
-          setResult({
+          return {
             category: hit.category,
             item_name: hit.name,
             disposal_tip: hit.tip
-          });
-          setTimeout(() => setShowPoints(true), 300);
-          setLoading(false);
-          return;
+          } as Classification;
         }
       }
 
-      // 2. Fall back to Claude API (Supabase Function)
+      // 2. Claude API Fallback
       const { data: scoreData } = await supabase.from('citizen_scores').select('ward_id').eq('user_id', session?.user?.id).maybeSingle();
       const ward_id = scoreData?.ward_id || "662ae969-067a-4b6b-a0b3-ac28cc665fe9";
 
-      const { data, error: invokeError } = await supabase.functions.invoke('classify-waste', {
+      const { data, error } = await supabase.functions.invoke('classify-waste', {
         body: {
           image_base64: image ? image.split(',')[1] : null,
           item_name: itemName || null,
@@ -140,26 +136,30 @@ export default function Waste() {
         }
       });
 
-      if (invokeError) throw invokeError;
+      if (error) throw error;
       if (data?.error) throw new Error(data.error);
-
-      setResult(data);
-      if (data && !data.error) {
+      return data as Classification;
+    },
+    onSuccess: (data) => {
+      if (data) {
+        setResult(data);
         setTimeout(() => setShowPoints(true), 300);
+        // Invalidate score to show updated points elsewhere if needed
+        queryClient.invalidateQueries({ queryKey: ['citizen-score', session?.user?.id] });
       }
-    } catch (err: any) {
-      setError(err.message || 'Classification failed.');
-    } finally {
-      setLoading(false);
     }
-  };
+  });
+
+  const classifyWaste = () => classificationMutation.mutate();
+  const loading = classificationMutation.isPending;
+  const error = classificationMutation.error instanceof Error ? classificationMutation.error.message : null;
 
   const reset = () => {
     setImage(null);
     setItemName('');
     setResult(null);
-    setError(null);
     setShowPoints(false);
+    classificationMutation.reset();
   };
 
   const getCategoryTheme = (cat: string) => {
@@ -322,7 +322,19 @@ export default function Waste() {
               </button>
             </div>
           )}
-          {error && <div className="text-rose-600 text-xs font-mono text-center">{error}</div>}
+          {loading && !result && (
+            <div className="animate-pulse">
+              <SkeletonCard lines={4} />
+            </div>
+          )}
+          {error && (
+            <div className="mt-4">
+              <ErrorState 
+                message={error} 
+                onRetry={classifyWaste} 
+              />
+            </div>
+          )}
         </div>
       </div>
     </CitizenLayout>
