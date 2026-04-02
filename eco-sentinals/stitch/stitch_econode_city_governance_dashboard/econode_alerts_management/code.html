@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EcoNode | Alerts Management</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#ffb4a9",
+              "on-tertiary-fixed": "#3f0302",
+              "primary-container": "#50c878",
+              "on-tertiary-container": "#782b23",
+              "surface-variant": "#e1e3e4",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-low": "#f3f4f5",
+              "surface": "#f8f9fa",
+              "on-surface": "#191c1d",
+              "on-primary": "#ffffff",
+              "tertiary-container": "#ff9587",
+              "on-secondary-fixed": "#0d1d2a",
+              "on-secondary-container": "#556474",
+              "surface-container-highest": "#e1e3e4",
+              "inverse-on-surface": "#f0f1f2",
+              "surface-container": "#edeeef",
+              "on-tertiary-fixed-variant": "#7b2e25",
+              "on-secondary": "#ffffff",
+              "surface-dim": "#d9dadb",
+              "surface-tint": "#006d36",
+              "on-secondary-fixed-variant": "#394857",
+              "secondary": "#50606f",
+              "inverse-surface": "#2e3132",
+              "secondary-fixed": "#d4e4f6",
+              "tertiary": "#99443a",
+              "outline": "#6e7a6e",
+              "on-primary-fixed-variant": "#005227",
+              "on-primary-fixed": "#00210c",
+              "on-background": "#191c1d",
+              "inverse-primary": "#66dd8b",
+              "on-error": "#ffffff",
+              "on-primary-container": "#005025",
+              "background": "#f8f9fa",
+              "secondary-fixed-dim": "#b8c8da",
+              "on-surface-variant": "#3e4a3f",
+              "error": "#ba1a1a",
+              "surface-bright": "#f8f9fa",
+              "primary-fixed": "#83fba5",
+              "outline-variant": "#bdcabc",
+              "on-error-container": "#93000a",
+              "error-container": "#ffdad6",
+              "on-tertiary": "#ffffff",
+              "primary": "#006d36",
+              "tertiary-fixed": "#ffdad5",
+              "surface-container-high": "#e7e8e9",
+              "primary-fixed-dim": "#66dd8b",
+              "secondary-container": "#d1e1f4"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- SideNavBar (Authority: JSON) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-slate-100 flex flex-col p-4 gap-2 z-50">
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<div>
+<div class="text-emerald-700 font-black text-lg leading-tight">EcoNode</div>
+<div class="text-[10px] uppercase tracking-widest text-secondary font-bold opacity-70">Civic Governance</div>
+</div>
+</div>
+<nav class="flex flex-col gap-1 flex-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200 transition-all font-manrope text-sm font-semibold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200 transition-all font-manrope text-sm font-semibold" href="#">
+<span class="material-symbols-outlined">map</span>
+<span>Map</span>
+</a>
+<!-- Active State Logic: Alerts is the current page -->
+<a class="flex items-center gap-3 px-4 py-3 bg-white text-emerald-700 shadow-sm rounded-lg font-manrope text-sm font-semibold" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span>Alerts</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200 transition-all font-manrope text-sm font-semibold" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span>Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-emerald-600 hover:bg-slate-200 transition-all font-manrope text-sm font-semibold" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto p-4 bg-surface-container-low rounded-xl flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-300 overflow-hidden ring-2 ring-white">
+<img alt="City Manager Profile" data-alt="Professional portrait of a city manager" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGc6zgvpufuQQ3Yr4Z83oHha86PY-OqNrh0xGwZec9A76FXmI699n9yxZuED_C4Kj8h4LpBTHQ86nxK-jOfqEeyl7eT7x6B9NZ4OdLatNfIAuNk9ky9Kbh43RVMCF-a28wa5kOBiQi-_ABGrelbElKmEPBIyiTkpjUwwp8HsFYfyCAunGB22VmQczFfHl512B48xDF4bfIUOqrqSQ87SbXCB-3bnyUHTR2240qHcaZcLWFhLTU2fU-XUlzY2o5IjL8_rj63Y07AQU"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold truncate">A. Sharma</p>
+<p class="text-[10px] text-on-surface-variant truncate">District Overseer</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-64 flex flex-col">
+<!-- TopAppBar (Authority: JSON) -->
+<header class="w-full top-0 sticky bg-slate-50 shadow-sm flex justify-between items-center px-6 py-3 z-40">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary-container transition-all" placeholder="Search parameters, districts, or alerts..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="text-slate-500 hover:bg-emerald-50 p-2 rounded-full transition-colors active:scale-95 duration-150 relative">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-tertiary rounded-full border-2 border-slate-50"></span>
+</button>
+<button class="text-slate-500 hover:bg-emerald-50 p-2 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Page Body -->
+<div class="p-8 flex flex-col lg:flex-row gap-8 overflow-y-auto max-h-[calc(100vh-64px)] no-scrollbar">
+<!-- Left Column: Alerts Feed -->
+<div class="flex-1 space-y-8">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-3xl font-extrabold font-headline tracking-tight text-on-surface">Environmental Alerts Management</h1>
+<p class="text-secondary font-label text-sm mt-1">Real-time monitoring and deployment interface for city-wide hazards.</p>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-5 py-2 rounded-full bg-primary text-on-primary text-xs font-semibold shadow-md whitespace-nowrap">All Alerts (24)</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-xs font-semibold hover:bg-surface-variant whitespace-nowrap">Critical (4)</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-xs font-semibold hover:bg-surface-variant whitespace-nowrap">Warning (12)</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-highest text-on-surface-variant text-xs font-semibold hover:bg-surface-variant whitespace-nowrap">Resolved (8)</button>
+</div>
+<!-- Alerts Table Container -->
+<div class="bg-surface-container-low rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high/50 text-secondary uppercase text-[10px] font-bold tracking-widest">
+<th class="px-6 py-4">Priority</th>
+<th class="px-6 py-4">Alert Type</th>
+<th class="px-6 py-4">Location</th>
+<th class="px-6 py-4">Timestamp</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant/30">
+<!-- Alert Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-[11px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Critical
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">air</span>
+<span class="font-semibold text-sm">PM 2.5 Spike</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm text-secondary">Okhla Industrial</td>
+<td class="px-6 py-5 text-sm text-secondary">2 mins ago</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 rounded-lg bg-orange-100 text-orange-700 text-[11px] font-bold">Investigating</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="bg-primary text-on-primary text-xs font-bold py-2 px-4 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95">Deploy Team</button>
+</td>
+</tr>
+<!-- Alert Row 2 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-[11px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Warning
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-500">water_drop</span>
+<span class="font-semibold text-sm">Water Contamination</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm text-secondary">Connaught Place</td>
+<td class="px-6 py-5 text-sm text-secondary">15 mins ago</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 rounded-lg bg-tertiary/10 text-tertiary text-[11px] font-bold uppercase tracking-tighter">Action Needed</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-primary font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-container/10 transition-colors">Notify Residents</button>
+</td>
+</tr>
+<!-- Alert Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Low
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">delete_sweep</span>
+<span class="font-semibold text-sm">Waste Collection Delay</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm text-secondary">Vasant Kunj</td>
+<td class="px-6 py-5 text-sm text-secondary">1 hour ago</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 rounded-lg bg-surface-container-high text-on-surface-variant text-[11px] font-bold">Under Review</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-primary font-bold text-xs px-4 py-2 rounded-lg hover:bg-primary-container/10 transition-colors">Assign Driver</button>
+</td>
+</tr>
+<!-- Alert Row 4 -->
+<tr class="hover:bg-surface-container-lowest transition-colors group">
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-[11px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Critical
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-orange-600">electric_bolt</span>
+<span class="font-semibold text-sm">Grid Overload</span>
+</div>
+</td>
+<td class="px-6 py-5 text-sm text-secondary">Dwarka Sec 10</td>
+<td class="px-6 py-5 text-sm text-secondary">3 hours ago</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 rounded-lg bg-orange-100 text-orange-700 text-[11px] font-bold">Investigating</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="bg-primary text-on-primary text-xs font-bold py-2 px-4 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95">Reroute Power</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Column: Analytics Side Panel -->
+<aside class="w-full lg:w-96 space-y-6">
+<!-- Daily Frequency Chart Card -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="font-bold text-sm mb-4 flex justify-between items-center">
+                        Daily Alert Frequency
+                        <span class="text-[10px] text-primary font-bold">+12% vs yesterday</span>
+</h3>
+<div class="h-32 flex items-end gap-1.5">
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[40%] hover:bg-primary-container/40 transition-all"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[65%] hover:bg-primary-container/40 transition-all"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[85%] hover:bg-primary-container/40 transition-all"></div>
+<div class="flex-1 bg-primary-container rounded-t-sm h-[50%] hover:bg-primary transition-all"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[75%] hover:bg-primary-container/40 transition-all"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[95%] hover:bg-primary-container/40 transition-all"></div>
+<div class="flex-1 bg-surface-container-low rounded-t-sm h-[60%] hover:bg-primary-container/40 transition-all"></div>
+</div>
+<div class="flex justify-between mt-2 text-[10px] text-secondary font-medium">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+</div>
+<!-- Donut Chart Visualization (Custom SVG/CSS) -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="font-bold text-sm mb-6">Alerts by District</h3>
+<div class="flex items-center gap-6">
+<div class="relative w-28 h-28 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-surface-container-low" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" stroke-width="12"></circle>
+<circle class="text-primary-container" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" stroke-dasharray="301" stroke-dashoffset="120" stroke-width="12"></circle>
+<circle class="text-secondary" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" stroke-dasharray="301" stroke-dashoffset="260" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-xl font-black">24</span>
+<span class="text-[8px] uppercase tracking-tighter text-secondary">Total</span>
+</div>
+</div>
+<div class="flex-1 space-y-3">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+<div class="flex-1">
+<div class="flex justify-between text-[11px] font-bold">
+<span>Central</span><span>60%</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<div class="flex-1">
+<div class="flex justify-between text-[11px] font-bold">
+<span>North</span><span>25%</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-high"></span>
+<div class="flex-1">
+<div class="flex justify-between text-[11px] font-bold">
+<span>Other</span><span>15%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Log -->
+<div class="bg-surface-container-low rounded-xl p-6">
+<h3 class="font-bold text-sm mb-4">Recent Activity</h3>
+<div class="space-y-4">
+<div class="flex gap-3 relative">
+<div class="absolute left-2.5 top-8 bottom-0 w-px bg-outline-variant/30"></div>
+<div class="w-5 h-5 rounded-full bg-primary-container/20 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-[12px] text-primary">check</span>
+</div>
+<div>
+<p class="text-xs font-bold">Sensor ID #892 Resolved</p>
+<p class="text-[10px] text-secondary mt-0.5">PM 10 levels stabilized in South Ext.</p>
+<p class="text-[10px] font-medium text-primary mt-1">12 mins ago</p>
+</div>
+</div>
+<div class="flex gap-3 relative">
+<div class="absolute left-2.5 top-8 bottom-0 w-px bg-outline-variant/30"></div>
+<div class="w-5 h-5 rounded-full bg-secondary-container/30 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-[12px] text-on-secondary-container">group</span>
+</div>
+<div>
+<p class="text-xs font-bold">Team Alpha Deployed</p>
+<p class="text-[10px] text-secondary mt-0.5">Responding to leakage in Karol Bagh.</p>
+<p class="text-[10px] font-medium text-primary mt-1">45 mins ago</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-5 h-5 rounded-full bg-primary-container/20 flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-[12px] text-primary">check</span>
+</div>
+<div>
+<p class="text-xs font-bold">Protocol Automated</p>
+<p class="text-[10px] text-secondary mt-0.5">Grid re-balancing completed.</p>
+<p class="text-[10px] font-medium text-primary mt-1">2 hours ago</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2 border border-outline-variant rounded-lg text-xs font-bold text-secondary hover:bg-white hover:border-primary-container transition-all">View Full Audit Log</button>
+</div>
+</aside>
+</div>
+</main>
+<!-- Contextual FAB (Mandatory Shell Logic) -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_alert</span>
+</button>
+</body></html>

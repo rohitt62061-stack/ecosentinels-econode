@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EcoNode | Delhi Smart City Governance</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed-variant": "#7b2e25",
+              "tertiary-fixed-dim": "#ffb4a9",
+              "on-primary-fixed": "#00210c",
+              "surface-container": "#edeeef",
+              "on-tertiary": "#ffffff",
+              "background": "#f8f9fa",
+              "on-error": "#ffffff",
+              "on-secondary-container": "#556474",
+              "surface-dim": "#d9dadb",
+              "surface-variant": "#e1e3e4",
+              "on-surface": "#191c1d",
+              "tertiary-fixed": "#ffdad5",
+              "secondary-container": "#d1e1f4",
+              "primary-fixed": "#83fba5",
+              "on-secondary": "#ffffff",
+              "error": "#ba1a1a",
+              "on-primary-container": "#005025",
+              "secondary-fixed-dim": "#b8c8da",
+              "surface-tint": "#006d36",
+              "primary": "#006d36",
+              "inverse-surface": "#2e3132",
+              "on-secondary-fixed-variant": "#394857",
+              "inverse-on-surface": "#f0f1f2",
+              "surface-container-low": "#f3f4f5",
+              "on-tertiary-fixed": "#3f0302",
+              "secondary-fixed": "#d4e4f6",
+              "on-tertiary-container": "#782b23",
+              "inverse-primary": "#66dd8b",
+              "surface-bright": "#f8f9fa",
+              "outline": "#6e7a6e",
+              "on-background": "#191c1d",
+              "primary-fixed-dim": "#66dd8b",
+              "tertiary-container": "#ff9587",
+              "surface-container-highest": "#e1e3e4",
+              "on-primary-fixed-variant": "#005227",
+              "on-error-container": "#93000a",
+              "secondary": "#50606f",
+              "tertiary": "#99443a",
+              "surface-container-high": "#e7e8e9",
+              "primary-container": "#50c878",
+              "outline-variant": "#bdcabc",
+              "on-surface-variant": "#3e4a3f",
+              "surface": "#f8f9fa",
+              "on-secondary-fixed": "#0d1d2a",
+              "error-container": "#ffdad6",
+              "on-primary": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .map-gradient-overlay {
+            background: linear-gradient(135deg, rgba(80, 200, 120, 0.1) 0%, rgba(153, 68, 58, 0.15) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background font-body text-on-surface">
+<div class="flex min-h-screen overflow-hidden">
+<!-- Sidebar: Dark Slate/Charcoal Style -->
+<aside class="w-64 bg-[#0d1d2a] flex flex-col justify-between py-8 px-4 border-r-0">
+<div class="flex flex-col gap-8">
+<div class="px-3">
+<h1 class="font-headline text-white text-xl font-bold tracking-tight">EcoNode</h1>
+<p class="text-secondary-fixed-dim text-xs font-medium uppercase tracking-widest mt-1">Delhi Governance</p>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-white" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mobile_layout</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-secondary-fixed-dim hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-medium text-sm">Maps</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-secondary-fixed-dim hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-medium text-sm">Alerts</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-secondary-fixed-dim hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-medium text-sm">Policy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-secondary-fixed-dim hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium text-sm">Settings</span>
+</a>
+</nav>
+</div>
+<div class="px-3 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border border-white/10">
+<img alt="User Profile" data-alt="Close up portrait of city official" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXEadlAG-ctR8-0lcr1CmGG5uqTbix0yPL252WNj53nUP6uz3cg-xOqD5Ti4iUii1972iNoxvzmc84jMJEh7CFDE8E-danbKxRpE6i7oJLOZUNI8zfUU3emoL-P1MDVKejV74zUHU7u59QznX74EXQmIHl_uF7elk5y4LDhgfOdNArB1N2l1OGzWJXQgNsONQms1yizJkeite1Bs-BzOFafAsfjedOkCe694B5JsRXJsI843UQJx_rXxyQ-aeQYm8pvh6VtloESRY"/>
+</div>
+<div class="flex flex-col">
+<span class="text-white text-sm font-semibold">Admin User</span>
+<span class="text-secondary-fixed-dim text-xs">Commissioner</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden">
+<!-- Top Navigation -->
+<header class="h-16 flex items-center justify-between px-8 bg-surface-container-lowest border-b-0 shadow-sm z-10">
+<div class="flex items-center gap-6">
+<h2 class="font-headline text-lg font-bold text-on-surface">AQI Governance Hub</h2>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-low rounded-full">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<span class="text-xs font-semibold text-on-surface-variant uppercase">Live Stream</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary-container" placeholder="Search sectors..." type="text"/>
+</div>
+<button class="w-10 h-10 flex items-center justify-center bg-surface-container-low rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface">help</span>
+</button>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Map & Main Widgets Section -->
+<section class="flex-1 flex flex-col p-6 gap-6 overflow-y-auto">
+<!-- Quick Stats -->
+<div class="grid grid-cols-3 gap-6">
+<!-- AQI Progress -->
+<div class="bg-surface-container-lowest p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-6">
+<div class="relative w-20 h-20">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary-container" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-dasharray="213" stroke-dashoffset="60" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="text-lg font-bold leading-none">142</span>
+</div>
+</div>
+<div>
+<p class="text-xs font-semibold text-secondary uppercase tracking-wider">Current AQI</p>
+<h3 class="text-xl font-bold mt-0.5">Moderate</h3>
+<div class="flex items-center gap-1 mt-1 text-tertiary text-xs font-medium">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>12% vs yesterday</span>
+</div>
+</div>
+</div>
+<!-- PM 10 Progress -->
+<div class="bg-surface-container-lowest p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-6">
+<div class="relative w-20 h-20">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-secondary" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-dasharray="213" stroke-dashoffset="140" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="text-lg font-bold leading-none">88</span>
+</div>
+</div>
+<div>
+<p class="text-xs font-semibold text-secondary uppercase tracking-wider">PM 10 Level</p>
+<h3 class="text-xl font-bold mt-0.5">Acceptable</h3>
+<div class="flex items-center gap-1 mt-1 text-primary text-xs font-medium">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+<span>4% decrease</span>
+</div>
+</div>
+</div>
+<!-- NO2 Progress -->
+<div class="bg-surface-container-lowest p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-6">
+<div class="relative w-20 h-20">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-tertiary" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-dasharray="213" stroke-dashoffset="100" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="text-lg font-bold leading-none">52</span>
+</div>
+</div>
+<div>
+<p class="text-xs font-semibold text-secondary uppercase tracking-wider">NO2 Density</p>
+<h3 class="text-xl font-bold mt-0.5">Sensitive</h3>
+<div class="flex items-center gap-1 mt-1 text-tertiary text-xs font-medium">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span>Peak traffic hours</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Map Area -->
+<div class="flex-1 min-h-[500px] relative rounded-2xl overflow-hidden bg-surface-container shadow-[0_8px_30px_rgba(0,0,0,0.04)] group">
+<img class="absolute inset-0 w-full h-full object-cover opacity-80" data-alt="Detailed satellite map of Delhi city grid" data-location="Delhi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYb0oMHq8exhb1wi-upWgeLH5X7nRU5unJf20sHZSrNdRa7nIgDIMEp0a7zHh-hg29C63xZiBeoz4eG-QRJV4406vTR9Shg8pFPiEOBlFC934sDg1G4eKC480XSwqJYTI5v3rCVpiH6AGnU47bVYOJ06jNGLcR3JIT5Fj0_EcGcUNyyxNCIUpxA0Spa6xLyOPIavZvSveGQAwmbA-us14UqtumNFVeB38REn7S40WKpU82-Cmt3PORZaVV4i4Xo19sY6_gSY_8i3g"/>
+<div class="absolute inset-0 map-gradient-overlay pointer-events-none"></div>
+<!-- Map Overlays (Hotspots) -->
+<div class="absolute top-1/4 left-1/3 w-32 h-32 rounded-full bg-tertiary/20 blur-2xl animate-pulse"></div>
+<div class="absolute top-1/2 left-2/3 w-48 h-48 rounded-full bg-primary-container/20 blur-3xl"></div>
+<!-- Floating Map Legend -->
+<div class="absolute bottom-6 left-6 glass-panel p-4 rounded-xl shadow-lg flex flex-col gap-3 border border-white/40">
+<p class="text-xs font-bold uppercase tracking-widest text-secondary">AQI Gradient</p>
+<div class="flex items-center gap-2">
+<div class="h-2 w-32 rounded-full bg-gradient-to-r from-primary-container via-yellow-400 to-tertiary"></div>
+</div>
+<div class="flex justify-between text-[10px] font-bold text-on-surface-variant">
+<span>GOOD</span>
+<span>CRITICAL</span>
+</div>
+</div>
+<!-- Map Interaction Controls -->
+<div class="absolute top-6 right-6 flex flex-col gap-2">
+<button class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center shadow-md hover:bg-white transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center shadow-md hover:bg-white transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<button class="w-10 h-10 glass-panel rounded-xl flex items-center justify-center shadow-md hover:bg-white transition-colors">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+<!-- Data Point Tooltip -->
+<div class="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-full mb-4 glass-panel px-4 py-2 rounded-xl shadow-xl border border-primary-container/30">
+<p class="text-[10px] font-bold text-primary uppercase">Sector 12, Okhla</p>
+<p class="text-sm font-bold text-on-surface">AQI: 312 (Hazardous)</p>
+</div>
+</div>
+<!-- Last 24 Hours AQI Trend Widget -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline font-bold text-on-surface">24H Air Quality Trend</h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span class="text-xs font-medium text-on-surface-variant">Central Delhi</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-xs font-medium text-on-surface-variant">NCR Border</span>
+</div>
+</div>
+</div>
+<!-- Minimalist Line Chart Placeholder -->
+<div class="h-32 w-full flex items-end gap-1">
+<div class="flex-1 bg-surface-container-high rounded-t-sm h-[40%]"></div>
+<div class="flex-1 bg-surface-container-high rounded-t-sm h-[45%]"></div>
+<div class="flex-1 bg-surface-container-high rounded-t-sm h-[60%]"></div>
+<div class="flex-1 bg-primary-container rounded-t-sm h-[75%] opacity-80"></div>
+<div class="flex-1 bg-primary-container rounded-t-sm h-[85%]"></div>
+<div class="flex-1 bg-primary-container rounded-t-sm h-[70%] opacity-90"></div>
+<div class="flex-1 bg-surface-container-high rounded-t-sm h-[50%]"></div>
+<div class="flex-1 bg-surface-container-high rounded-t-sm h-[40%]"></div>
+<div class="flex-1 bg-tertiary rounded-t-sm h-[90%] opacity-80"></div>
+<div class="flex-1 bg-tertiary rounded-t-sm h-[95%]"></div>
+<div class="flex-1 bg-tertiary rounded-t-sm h-[80%] opacity-90"></div>
+<div class="flex-1 bg-surface-container-high rounded-t-sm h-[60%]"></div>
+<div class="flex-1 bg-surface-container-high rounded-t-sm h-[40%]"></div>
+<div class="flex-1 bg-primary-container rounded-t-sm h-[65%]"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+<span>06:00 AM</span>
+<span>12:00 PM</span>
+<span>06:00 PM</span>
+<span>12:00 AM</span>
+<span>Now</span>
+</div>
+</div>
+</section>
+<!-- Right Panel: Real-time Alerts -->
+<aside class="w-96 bg-surface-container-low p-6 flex flex-col gap-6 overflow-y-auto">
+<div class="flex items-center justify-between">
+<h3 class="font-headline text-lg font-bold text-on-surface">Live Intelligence</h3>
+<span class="px-2 py-0.5 bg-tertiary-container text-on-tertiary-container text-[10px] font-black rounded uppercase">7 New</span>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Alert Card 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border-l-4 border-tertiary group hover:translate-x-1 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-tertiary uppercase tracking-wider">Critical Alert</span>
+<span class="text-[10px] text-on-surface-variant">2m ago</span>
+</div>
+<h4 class="font-bold text-sm text-on-surface mb-1">PM 2.5 Spike in Okhla</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed">Industrial sector 4 recording levels &gt; 400. Automated suppression systems activated.</p>
+<div class="mt-3 flex gap-2">
+<button class="bg-surface-container-high text-on-surface px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-tight hover:bg-surface-variant transition-colors">Dismiss</button>
+<button class="bg-primary text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-tight hover:opacity-90 transition-opacity">Deploy Team</button>
+</div>
+</div>
+<!-- Alert Card 2 (Policy) -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border-l-4 border-secondary-container group hover:translate-x-1 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-secondary uppercase tracking-wider">Policy Insight</span>
+<span class="text-[10px] text-on-surface-variant">14m ago</span>
+</div>
+<h4 class="font-bold text-sm text-on-surface mb-1">Phase Out: Diesel Generators</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed">AI analysis suggests 18% reduction in local PM10 if phased out in residential South Delhi.</p>
+<button class="mt-3 text-primary text-[10px] font-bold uppercase flex items-center gap-1 group-hover:gap-2 transition-all">
+                            Review Proposal <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<!-- Alert Card 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border-l-4 border-primary-container group hover:translate-x-1 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-primary uppercase tracking-wider">System Update</span>
+<span class="text-[10px] text-on-surface-variant">1h ago</span>
+</div>
+<h4 class="font-bold text-sm text-on-surface mb-1">New Sensor Node Active</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed">Connaught Place central grid node #C-29 is now broadcasting live AQI metrics.</p>
+</div>
+<!-- Alert Card 4 -->
+<div class="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border-l-4 border-tertiary group hover:translate-x-1 transition-transform cursor-pointer opacity-80">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold text-tertiary uppercase tracking-wider">Critical Alert</span>
+<span class="text-[10px] text-on-surface-variant">3h ago</span>
+</div>
+<h4 class="font-bold text-sm text-on-surface mb-1">Dust Storm Warning</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed">Approaching from Northwest. Recommended street wetting operations start at 04:00 PM.</p>
+</div>
+</div>
+<div class="mt-auto">
+<div class="bg-on-secondary-fixed-variant p-4 rounded-2xl text-white">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary-container">auto_awesome</span>
+<p class="text-xs font-bold uppercase tracking-widest">AI Forecast</p>
+</div>
+<p class="text-xs leading-relaxed opacity-90 italic">"Tomorrow is expected to be 'Good' air quality due to high winds. Reduced power grid load predicted."</p>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</body></html>
